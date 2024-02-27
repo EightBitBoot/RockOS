@@ -1,0 +1,4 @@
+These are example user programs from the 20225 version of this course.
+I've copied them here to give people some idea of what typical user-level
+code looks like. These will need to be modified - potentially, a lot - to
+adapt them to the set of system calls we implement this semester.
