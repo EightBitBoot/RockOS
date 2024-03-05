@@ -34,6 +34,145 @@
 
 /*
 **********************************************
+** CONVENIENT "SHORTHAND" VERSIONS OF SYSCALLS
+**********************************************
+*/
+
+/**
+** wait - wait for any child to exit
+**
+** usage:   pid = wait(&status)
+**
+** Calls waitpid(0,status)
+**
+** @param status Pointer to int32_t into which the child's status is placed,
+**               or NULL
+**
+** @returns The PID of the terminated child, or an error code
+*/
+int32_t wait( int32_t *status ) {
+	return( waitpid(0,status) );
+}
+
+/**
+** spawn - create a new process
+**
+** usage:   pid = spawn(entry,prio,args);
+**
+** Performs a fork(); on success, the child performs an execp()
+** with 'User' as the priority level.
+**
+** @param entry The function which is the entry point of the new code
+** @param prio  The desired priority for the new process, or -1
+** @param args  The argument vector for the new process
+**
+** @returns PID of the new process, or an error code
+*/
+int32_t spawn( userfcn_t entry, int32_t prio, char *args[] ) {
+	int32_t pid;
+	char buf[256];
+
+	pid = fork();
+	if( pid != 0 ) {
+		// failure, or we are the parent
+		return( pid );
+	}
+
+	// we are the child
+	pid = getdata( Pid );
+
+	// set the priority if we need to
+	if( prio >= 0 ) {
+		int32_t old = setdata( Prio, prio );
+		if( old < 0 ) {
+			sprint( buf, "PID %d set prio %d failed, code %d\n",
+					pid, prio, old );
+			cwrites( buf );
+		}
+	}
+
+	exec( entry, args );
+
+	// uh-oh....
+
+	sprint( buf, "PID %d exec() 0x%08x failed\n", pid, (uint32_t) entry );
+	cwrites( buf );
+
+	exit( E_FAILURE );
+	return( 0 );   // shut the compiler up
+}
+
+/**
+** cwritech(ch) - write a single character to the console
+**
+** @param ch The character to write
+**
+** @returns The return value from calling write()
+*/
+int cwritech( char ch ) {
+	return( write(CHAN_CIO,&ch,1) );
+}
+
+/**
+** cwrites(str) - write a NUL-terminated string to the console
+**
+** @param str The string to write
+**
+*/
+int cwrites( const char *str ) {
+	int len = strlen(str);
+	return( write(CHAN_CIO,str,len) );
+}
+
+/**
+** cwrite(buf,size) - write a sized buffer to the console
+**
+** @param buf  The buffer to write
+** @param size The number of bytes to write
+**
+** @returns The return value from calling write()
+*/
+int cwrite( const char *buf, uint32_t size ) {
+	return( write(CHAN_CIO,buf,size) );
+}
+
+/**
+** swritech(ch) - write a single character to the SIO
+**
+** @param ch The character to write
+**
+** @returns The return value from calling write()
+*/
+int swritech( char ch ) {
+	return( write(CHAN_SIO,&ch,1) );
+}
+
+/**
+** swrites(str) - write a NUL-terminated string to the SIO
+**
+** @param str The string to write
+**
+** @returns The return value from calling write()
+*/
+int swrites( const char *str ) {
+	int len = strlen(str);
+	return( write(CHAN_SIO,str,len) );
+}
+
+/**
+** swrite(buf,size) - write a sized buffer to the SIO
+**
+** @param buf  The buffer to write
+** @param size The number of bytes to write
+**
+** @returns The return value from calling write()
+*/
+int swrite( const char *buf, uint32_t size ) {
+	return( write(CHAN_SIO,buf,size) );
+}
+
+/*
+**********************************************
 ** STRING MANIPULATION FUNCTIONS
 **********************************************
 */
@@ -47,30 +186,30 @@
 ** @return The converted integer
 */
 int str2int( register const char *str, register int base ) {
-    register int num = 0;
-    register char bchar = '9';
-    int sign = 1;
+	register int num = 0;
+	register char bchar = '9';
+	int sign = 1;
 
-    // check for leading '-'
-    if( *str == '-' ) {
-        sign = -1;
-        ++str;
-    }
+	// check for leading '-'
+	if( *str == '-' ) {
+		sign = -1;
+		++str;
+	}
 
-    if( base != 10 ) {
-        bchar = '0' + base - 1;
-    }
+	if( base != 10 ) {
+		bchar = '0' + base - 1;
+	}
 
-    // iterate through the characters
-    while( *str ) {
-        if( *str < '0' || *str > bchar )
-            break;
-        num = num * base + *str - '0';
-        ++str;
-    }
+	// iterate through the characters
+	while( *str ) {
+		if( *str < '0' || *str > bchar )
+			break;
+		num = num * base + *str - '0';
+		++str;
+	}
 
-    // return the converted value
-    return( num * sign );
+	// return the converted value
+	return( num * sign );
 }
 
 /**
@@ -81,13 +220,13 @@ int str2int( register const char *str, register int base ) {
 ** @return The length of the string, or 0
 */
 uint32_t strlen( register const char *str ) {
-    register uint32_t len = 0;
+	register uint32_t len = 0;
 
-    while( *str++ ) {
-        ++len;
-    }
+	while( *str++ ) {
+		++len;
+	}
 
-    return( len );
+	return( len );
 }
 
 /**
@@ -101,12 +240,12 @@ uint32_t strlen( register const char *str ) {
 ** NOTE:  assumes dst is large enough to hold the copied string
 */
 char *strcpy( register char *dst, register const char *src ) {
-    register char *tmp = dst;
+	register char *tmp = dst;
 
-    while( (*dst++ = *src++) )
-        ;
+	while( (*dst++ = *src++) )
+		;
 
-    return( tmp );
+	return( tmp );
 }
 
 /**
@@ -120,15 +259,15 @@ char *strcpy( register char *dst, register const char *src ) {
 ** NOTE:  assumes dst is large enough to hold the resulting string
 */
 char *strcat( register char *dst, register const char *src ) {
-    register char *tmp = dst;
+	register char *tmp = dst;
 
-    while( *dst )  // find the NUL
-        ++dst;
+	while( *dst )  // find the NUL
+		++dst;
 
-    while( (*dst++ = *src++) )  // append the src string
-        ;
+	while( (*dst++ = *src++) )  // append the src string
+		;
 
-    return( tmp );
+	return( tmp );
 }
 
 /**
@@ -141,10 +280,10 @@ char *strcat( register char *dst, register const char *src ) {
 */
 int strcmp( register const char *s1, register const char *s2 ) {
 
-    while( *s1 != 0 && (*s1 == *s2) )
-        ++s1, ++s2;
+	while( *s1 != 0 && (*s1 == *s2) )
+		++s1, ++s2;
 
-    return( *(const unsigned char *)s1 - *(const unsigned char *)s2 );
+	return( *(const unsigned char *)s1 - *(const unsigned char *)s2 );
 }
 
 
@@ -160,11 +299,11 @@ int strcmp( register const char *s1, register const char *s2 ) {
 ** NOTE: does NOT NUL-terminate the buffer
 */
 char *pad( char *dst, int extra, int padchar ) {
-    while( extra > 0 ){
-        *dst++ = (char) padchar;
-        extra -= 1;
-    }
-    return dst;
+	while( extra > 0 ){
+		*dst++ = (char) padchar;
+		extra -= 1;
+	}
+	return dst;
 }
 
 /**
@@ -183,33 +322,33 @@ char *pad( char *dst, int extra, int padchar ) {
 ** NOTE: does NOT NUL-terminate the buffer
 */
 char *padstr( char *dst, char *str, int len, int width,
-                   int leftadjust, int padchar ) {
-    int    extra;
+				   int leftadjust, int padchar ) {
+	int extra;
 
-    // determine the length of the string if we need to
-    if( len < 0 ){
-        len = strlen( str );
-    }
+	// determine the length of the string if we need to
+	if( len < 0 ){
+		len = strlen( str );
+	}
 
-    // how much filler must we add?
-    extra = width - len;
+	// how much filler must we add?
+	extra = width - len;
 
-    // add filler on the left if we're not left-justifying
-    if( extra > 0 && !leftadjust ){
-        dst = pad( dst, extra, padchar );
-    }
+	// add filler on the left if we're not left-justifying
+	if( extra > 0 && !leftadjust ){
+		dst = pad( dst, extra, padchar );
+	}
 
-    // copy the string itself
-    for( int i = 0; i < len; ++i ) {
-        *dst++ = str[i];
-    }
+	// copy the string itself
+	for( int i = 0; i < len; ++i ) {
+		*dst++ = str[i];
+	}
 
-    // add filler on the right if we are left-justifying
-    if( extra > 0 && leftadjust ){
-        dst = pad( dst, extra, padchar );
-    }
+	// add filler on the right if we are left-justifying
+	if( extra > 0 && leftadjust ){
+		dst = pad( dst, extra, padchar );
+	}
 
-    return dst;
+	return dst;
 }
 
 /**
@@ -228,100 +367,100 @@ char *padstr( char *dst, char *str, int len, int width,
 ** 32-bit values).
 */
 void sprint( char *dst, char *fmt, ... ) {
-    int32_t *ap;
-    char buf[ 12 ];
-    char ch;
-    char *str;
-    int leftadjust;
-    int width;
-    int len;
-    int padchar;
+	int32_t *ap;
+	char buf[ 12 ];
+	char ch;
+	char *str;
+	int leftadjust;
+	int width;
+	int len;
+	int padchar;
 
-    /*
-    ** Get characters from the format string and process them
-    **
-    ** We use the "old-school" method of handling variable numbers
-    ** of parameters.  We assume that parameters are passed on the
-    ** runtime stack in consecutive longwords; thus, if the first
-    ** parameter is at location 'x', the second is at 'x+4', the
-    ** third at 'x+8', etc.  We use a pointer to a 32-bit thing
-    ** to point to the next "thing", and interpret it according
-    ** to the format string.
-    */
-    
-    // get the pointer to the first "value" parameter
-    ap = (int *)(&fmt) + 1;
+	/*
+	** Get characters from the format string and process them
+	**
+	** We use the "old-school" method of handling variable numbers
+	** of parameters.  We assume that parameters are passed on the
+	** runtime stack in consecutive longwords; thus, if the first
+	** parameter is at location 'x', the second is at 'x+4', the
+	** third at 'x+8', etc.  We use a pointer to a 32-bit thing
+	** to point to the next "thing", and interpret it according
+	** to the format string.
+	*/
+	
+	// get the pointer to the first "value" parameter
+	ap = (int *)(&fmt) + 1;
 
-    // iterate through the format string
-    while( (ch = *fmt++) != '\0' ){
-        /*
-        ** Is it the start of a format code?
-        */
-        if( ch == '%' ){
-            /*
-            ** Yes, get the padding and width options (if there).
-            ** Alignment must come at the beginning, then fill,
-            ** then width.
-            */
-            leftadjust = 0;
-            padchar = ' ';
-            width = 0;
-            ch = *fmt++;
-            if( ch == '-' ){
-                leftadjust = 1;
-                ch = *fmt++;
-            }
-            if( ch == '0' ){
-                padchar = '0';
-                ch = *fmt++;
-            }
-            while( ch >= '0' && ch <= '9' ){
-                width *= 10;
-                width += ch - '0';
-                ch = *fmt++;
-            }
+	// iterate through the format string
+	while( (ch = *fmt++) != '\0' ){
+		/*
+		** Is it the start of a format code?
+		*/
+		if( ch == '%' ){
+			/*
+			** Yes, get the padding and width options (if there).
+			** Alignment must come at the beginning, then fill,
+			** then width.
+			*/
+			leftadjust = 0;
+			padchar = ' ';
+			width = 0;
+			ch = *fmt++;
+			if( ch == '-' ){
+				leftadjust = 1;
+				ch = *fmt++;
+			}
+			if( ch == '0' ){
+				padchar = '0';
+				ch = *fmt++;
+			}
+			while( ch >= '0' && ch <= '9' ){
+				width *= 10;
+				width += ch - '0';
+				ch = *fmt++;
+			}
 
-            /*
-            ** What data type do we have?
-            */
-            switch( ch ) {
+			/*
+			** What data type do we have?
+			*/
+			switch( ch ) {
 
-            case 'c':  // characters are passed as 32-bit values
-                ch = *ap++;
-                buf[ 0 ] = ch;
-                buf[ 1 ] = '\0';
-                dst = padstr( dst, buf, 1, width, leftadjust, padchar );
-                break;
+			case 'c':  // characters are passed as 32-bit values
+				ch = *ap++;
+				buf[ 0 ] = ch;
+				buf[ 1 ] = '\0';
+				dst = padstr( dst, buf, 1, width, leftadjust, padchar );
+				break;
 
-            case 'd':
-                len = cvt_dec( buf, *ap++ );
-                dst = padstr( dst, buf, len, width, leftadjust, padchar );
-                break;
+			case 'd':
+				len = cvt_dec( buf, *ap++ );
+				dst = padstr( dst, buf, len, width, leftadjust, padchar );
+				break;
 
-            case 's':
-                str = (char *) (*ap++);
-                dst = padstr( dst, str, -1, width, leftadjust, padchar );
-                break;
+			case 's':
+				str = (char *) (*ap++);
+				dst = padstr( dst, str, -1, width, leftadjust, padchar );
+				break;
 
-            case 'x':
-                len = cvt_hex( buf, *ap++ );
-                dst = padstr( dst, buf, len, width, leftadjust, padchar );
-                break;
+			case 'x':
+				len = cvt_hex( buf, *ap++ );
+				dst = padstr( dst, buf, len, width, leftadjust, padchar );
+				break;
 
-            case 'o':
-                len = cvt_oct( buf, *ap++ );
-                dst = padstr( dst, buf, len, width, leftadjust, padchar );
-                break;
+			case 'o':
+				len = cvt_oct( buf, *ap++ );
+				dst = padstr( dst, buf, len, width, leftadjust, padchar );
+				break;
 
-            }
-        } else {
-            // no, it's just an ordinary character
-            *dst++ = ch;
-        }
-    }
+			}
+		} else {
+			// no, it's just an ordinary character
+			*dst++ = ch;
+		}
+	}
 
-    // NUL-terminate the result
-    *dst = '\0';
+	// NUL-terminate the result
+	*dst = '\0';
 }
 
 /*
@@ -344,18 +483,18 @@ void sprint( char *dst, char *fmt, ... ) {
 ** NOTE:  assumes buf is large enough to hold the resulting string
 */
 char *cvt_dec0( char *buf, int value ) {
-    int quotient;
+	int quotient;
 
-    quotient = value / 10;
-    if( quotient < 0 ) {
-        quotient = 214748364;
-        value = 8;
-    }
-    if( quotient != 0 ) {
-        buf = cvt_dec0( buf, quotient );
-    }
-    *buf++ = value % 10 + '0';
-    return buf;
+	quotient = value / 10;
+	if( quotient < 0 ) {
+		quotient = 214748364;
+		value = 8;
+	}
+	if( quotient != 0 ) {
+		buf = cvt_dec0( buf, quotient );
+	}
+	*buf++ = value % 10 + '0';
+	return buf;
 }
 
 /**
@@ -372,17 +511,17 @@ char *cvt_dec0( char *buf, int value ) {
 ** NOTE:  assumes buf is large enough to hold the resulting string
 */
 int cvt_dec( char *buf, int32_t value ) {
-    char *bp = buf;
+	char *bp = buf;
 
-    if( value < 0 ) {
-        *bp++ = '-';
-        value = -value;
-    }
+	if( value < 0 ) {
+		*bp++ = '-';
+		value = -value;
+	}
 
-    bp = cvt_dec0( bp, value );
-    *bp  = '\0';
+	bp = cvt_dec0( bp, value );
+	*bp  = '\0';
 
-    return( bp - buf );
+	return( bp - buf );
 }
 
 /**
@@ -400,22 +539,22 @@ int cvt_dec( char *buf, int32_t value ) {
 ** NOTE:  assumes buf is large enough to hold the resulting string
 */
 int cvt_hex( char *buf, uint32_t value ) {
-    char hexdigits[] = "0123456789ABCDEF";
-    int chars_stored = 0;
+	char hexdigits[] = "0123456789ABCDEF";
+	int chars_stored = 0;
 
-    for( int i = 0; i < 8; i += 1 ) {
-        int val = value & 0xf0000000;
-        if( chars_stored || val != 0 || i == 7 ) {
-            ++chars_stored;
-            val = (val >> 28) & 0xf;
-            *buf++ = hexdigits[val];
-        }
-        value <<= 4;
-    }
+	for( int i = 0; i < 8; i += 1 ) {
+		int val = value & 0xf0000000;
+		if( chars_stored || val != 0 || i == 7 ) {
+			++chars_stored;
+			val = (val >> 28) & 0xf;
+			*buf++ = hexdigits[val];
+		}
+		value <<= 4;
+	}
 
-    *buf = '\0';
+	*buf = '\0';
 
-    return( chars_stored );
+	return( chars_stored );
 }
 
 /**
@@ -433,25 +572,25 @@ int cvt_hex( char *buf, uint32_t value ) {
 ** NOTE:  assumes buf is large enough to hold the resulting string
 */
 int cvt_oct( char *buf, uint32_t value ){
-    int     i;
-    int     chars_stored = 0;
-    char    *bp = buf;
-    int     val;
+	int i;
+	int chars_stored = 0;
+	char *bp = buf;
+	int val;
 
-    val = ( value & 0xc0000000 );
-    val >>= 30;
-    for( i = 0; i < 11; i += 1 ){
+	val = ( value & 0xc0000000 );
+	val >>= 30;
+	for( i = 0; i < 11; i += 1 ){
 
-        if( i == 10 || val != 0 || chars_stored ) {
-            chars_stored = 1;
-            val &= 0x7;
-            *bp++ = val + '0';
-        }
-        value <<= 3;
-        val = ( value & 0xe0000000 );
-        val >>= 29;
-    }
-    *bp = '\0';
+		if( i == 10 || val != 0 || chars_stored ) {
+			chars_stored = 1;
+			val &= 0x7;
+			*bp++ = val + '0';
+		}
+		value <<= 3;
+		val = ( value & 0xe0000000 );
+		val >>= 29;
+	}
+	*bp = '\0';
 
-    return bp - buf;
+	return bp - buf;
 }

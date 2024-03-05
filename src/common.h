@@ -39,6 +39,10 @@
 #define CHAN_CIO		0
 #define CHAN_SIO		1
 
+// maximum number of arguments that can be passed to a user process
+
+#define	MAX_ARGS		10
+
 #ifndef SP_ASM_SRC
 
 /*
@@ -70,7 +74,6 @@
 */
 
 // standard integer sized types
-
 typedef char int8_t;
 typedef unsigned char uint8_t;
 typedef short int16_t;
@@ -80,29 +83,59 @@ typedef unsigned int uint32_t;
 typedef long long int int64_t;
 typedef unsigned long long int uint64_t;
 
-// generic types
-
 // Boolean values
 typedef uint8_t bool_t;
 
 #define true	1
 #define false	0
 
+// ----------------------------------------------------------
 // System time
 typedef uint32_t time_t;
 
-// Status return values
-typedef int32_t status_t;
+// ----------------------------------------------------------
+// User main() function signature
+typedef int32_t (*userfcn_t)(int32_t,char*[]);
+
+// ----------------------------------------------------------
+// Get/set syscall options
+typedef int32_t datum_t;
+
+enum datum_e {
+	Pid = 0, PPid = 1, Prio = 2, Time = 3,
+	// sentinel
+	N_DATUMS
+	// yes, that's valid as the plural of 'datum', according
+	// to both Merriam-Webster and the Britannia Dictionary
+};
+
+// ----------------------------------------------------------
+// System call error return values
 
 // success!
-#define S_OK	0
+#define E_SUCCESS		0
 
 // generic failure
-#define S_ERR	(-1)
+#define E_FAILURE		(-1)
 
 // other failures
-#define S_NOMEM	(-2)
-#define S_EMPTY	(-3)
+#define E_BAD_PARAM		(-2)
+#define	E_NO_CHILDREN	(-3)
+
+// ----------------------------------------------------------
+// PIDs are 16-bit unsigned ints
+typedef uint16_t pid_t;
+
+// ----------------------------------------------------------
+// Minimal space for priority representation
+typedef uint8_t prio_t;
+
+// Process priorities
+enum prio_e {
+    SysPrio = 0, UserPrio, DeferredPrio,
+    // sentinel
+    N_PRIOS
+};
 
 /*
 ** Additional OS-only or user-only things

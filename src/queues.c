@@ -29,6 +29,7 @@
 #define	SP_KERNEL_SRC
 
 #include "common.h"
+#include "kernel.h"
 #include "queues.h"
 
 /*

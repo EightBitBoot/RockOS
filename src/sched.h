@@ -35,6 +35,9 @@
 // the ready queue
 extern queue_t _ready[N_PRIOS];
 
+// the currently-executing process
+extern pcb_t *_current;
+
 /*
 ** Prototypes
 */
@@ -62,7 +65,7 @@ status_t _schedule( pcb_t *pcb );
 **
 ** Select the next process to run from the ready queue.
 */
-status_t _dispatch( void );
+void _dispatch( void );
 
 #endif
 // !SP_ASM_SRC

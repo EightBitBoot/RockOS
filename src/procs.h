@@ -11,11 +11,18 @@
 
 #include "common.h"
 
+// this is here because stacks.h needs a pointer to a pcb_t
+
+typedef struct pcb_s pcb_t;
+
 #include "stacks.h"
 
 /*
 ** General (C and/or assembly) definitions
 */
+
+// standard quantum for user processes is 5 clock ticks
+#define	Q_STD		5
 
 #ifndef SP_ASM_SRC
 
@@ -25,10 +32,14 @@
 
 /*
 ** Types
+**
+** Note: some process-related types (e.g., priorities) are defined
+** in common.h because they are used by both the OS and user-level
+** code.
 */
 
-// process states and priorities may need to be moved
-// to common.h if they are going to be visible to userland
+// process states may need to be moved to common.h
+// if they are going to be visible to userland
 
 // Process states
 enum state_e {
@@ -37,26 +48,13 @@ enum state_e {
 	// "active" states
 	Ready, Running, Sleeping, Blocked, Waiting,
 	// "dead" states
-	Zombie,
+	Killed, Zombie,
 	// sentinel - value equals the number of states
 	N_STATES
 };
 
 // our process state type
 typedef uint8_t state_t;
-
-// PIDs are 16-bit unsigned ints
-typedef uint16_t pid_t;
-
-// Process priorities
-enum prio_e {
-	SysPrio = 0, UserPrio, DeferredPrio,
-	// sentinel
-	N_PRIOS
-};
-
-// Minimal space for priority representation
-typedef uint8_t prio_t;
 
 /*
 ** Process context structure
@@ -101,7 +99,7 @@ typedef struct context_s {
 ** currently, 32 bytes
 */
 
-typedef struct pcb_s {
+struct pcb_s {
 
 	// four-byte fields
 
@@ -127,7 +125,7 @@ typedef struct pcb_s {
 	// adjust this as fields are added/removed/changed
 	uint8_t filler[9];	
 
-} pcb_t;
+};
 
 #define	SZ_PCB	sizeof(pcb_t)
 
@@ -172,6 +170,49 @@ pcb_t *_pcb_alloc( void );
 ** @param pcb  The PCB to be deallocated
 */
 void _pcb_dealloc( pcb_t *pcb );
+
+/*
+** Debugging/tracing routines
+*/
+
+/**
+** _pcb_dump(msg,pcb)
+**
+** Dumps the contents of this PCB to the console
+**
+** @param msg   An optional message to print before the dump
+** @param p     The PCB to dump out
+*/
+void _pcb_dump( const char *msg, register pcb_t *p );
+
+/**
+** _ctx_dump(msg,context)
+**
+** Dumps the contents of this process context to the console
+**
+** @param msg   An optional message to print before the dump
+** @param c     The context to dump out
+*/
+void _ctx_dump( const char *msg, register context_t *c );
+
+/**
+** _ctx_dump_all(msg)
+**
+** dump the process context for all active processes
+**
+** @param msg  Optional message to print
+*/
+void _ctx_dump_all( const char *msg );
+
+/**
+** _ptable_dump(msg,all)
+**
+** dump the contents of the "active processes" table
+**
+** @param msg  Optional message to print
+** @param all  Dump all or only part of the relevant data
+*/
+void _ptable_dump( const char *msg, bool_t all );
 
 #endif
 // !SP_ASM_SRC

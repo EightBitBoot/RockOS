@@ -5,37 +5,45 @@
 #include "ulib.h"
 
 /**
-** User function Q:  exit, write, bogus
+** User function Q:   exit, write, bogus
 **
 ** Reports itself, then tries to execute a bogus system call
 **
 ** Invoked as:  userQ  x
-**   where x is the ID character
+**	 where x is the ID character
 */
 
 USERMAIN( userQ ) {
-    char ch = 'q';    // default character to print
-    char buf[128];
+	char ch = 'q';	  // default character to print
+	char buf[128];
 
-    // process the command-line arguments
-    ARG_PROC( 2, args, 5, nargs, "userQ" );
-    if( nargs == 2 ) {
-        ch = argv[1][0];
-    }
+	// process the command-line arguments
+	switch( argc ) {
+	case 2:	ch = argv[1][0];
+			break;
+	default:
+			sprint( buf, "userQ: argc %d, args: ", argc );
+			cwrites( buf );
+			for( int i = 0; i <= argc; ++i ) {
+				sprint( buf, " %s", argv[argc] ? argv[argc] : "(null)" );
+				cwrites( buf );
+			}
+			cwrites( "\n" );
+	}
 
-    // announce our presence
-    write( CHAN_SIO, &ch, 1 );
+	// announce our presence
+	write( CHAN_SIO, &ch, 1 );
 
-    // try something weird
-    bogus();
+	// try something weird
+	bogus();
 
-    // should not have come back here!
-    sprint( buf, "!!!!! %c returned from bogus syscall!?!?!\n", ch );
-    cwrites( buf );
+	// should not have come back here!
+	sprint( buf, "!!!!! %c returned from bogus syscall!?!?!\n", ch );
+	cwrites( buf );
 
-    exit( 1 );
+	exit( 1 );
 
-    return( 42 );  // shut the compiler up!
+	return( 42 );  // shut the compiler up!
 }
 
 #endif

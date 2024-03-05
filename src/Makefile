@@ -14,13 +14,16 @@
 # OS files
 #
 
-OS_C_SRC = 
-OS_C_OBJ = 
+OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
+	   syscalls.c
+OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
+	   syscalls.o
 
 OS_S_SRC =
 OS_S_OBJ =
 
-OS_HDRS  = 
+OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
+	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h
 
 OS_LIBS =
 
@@ -31,13 +34,14 @@ OS_OBJS = $(OS_C_OBJ) $(OS_S_OBJ)
 # "Userland" files
 #
 
-USR_C_SRC =
-USR_C_OBJ =
+USR_C_SRC = ulibc.c users.c
+USR_C_OBJ = ulibc.o users.o
 
-USR_S_SRC =
-USR_S_OBJ =
 
-USR_HDRS  =
+USR_S_SRC = ulibs.S
+USR_S_OBJ = ulibs.o
+
+USR_HDRS  = udefs.h ulib.h users.h
 
 USR_LIBS  =
 
@@ -77,9 +81,12 @@ SOURCES = $(BOOT_SRC) $(FMK_SRCS) $(OS_SRCS) $(USR_SRCS)
 # Compilation/assembly definable options
 #
 # General options:
-#	CLEAR_BSS		include code to clear all BSS space
+#	CLEAR_BSS		include bootstrap code to clear all BSS space
 #	GET_MMAP		get BIOS memory map via int 0x15 0xE820
 #	SP_CONFIG		enable SP OS-specific startup variations
+#
+# OS behavior:
+#	STATIC_STACKS		statically allocate all stack space
 #
 # Debugging options:
 #	RPT_INT_UNEXP		report any 'unexpected' interrupts
@@ -91,7 +98,6 @@ SOURCES = $(BOOT_SRC) $(FMK_SRCS) $(OS_SRCS) $(USR_SRCS)
 #         1                     important consistency checking
 #         2                     less important consistency checking
 #         > 2                   currently unused
-#       USER_SHELL		spawn a user 'shell' process
 #       CONSOLE_STATS		print statistics on console kbd input
 #       STATUS=n                dump queue & process info every 'n' seconds
 #

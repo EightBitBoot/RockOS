@@ -61,20 +61,15 @@
 
 #define SP_KERNEL_SRC
 
-#include "common.h"
+// this should do all includes required for this OS
+#include "compat.h"
 
+// all other framework includes are next
 #include <uart.h>
 #include "x86arch.h"
 #include "x86pic.h"
 
-#include "compat.h"
 #include "sio.h"
-
-#include "queues.h"
-#include "process.h"
-#include "scheduler.h"
-#include "kernel.h"
-
 #include "lib.h"
 
 /*
@@ -110,7 +105,9 @@ static uint8_t _ier;
 */
 
 // queue for read-blocked processes
-QTYPE READQ;
+#ifdef QNAME
+QTYPE QNAME;
+#endif
 
 /*
 ** PRIVATE FUNCTIONS
@@ -165,15 +162,16 @@ static void _sio_isr( int vector, int ecode ) {
 	__cio_printf( " ch %02x", ch );
 #endif
 
+#ifdef QNAME
 			//
 			// If there is a waiting process, this must be
 			// the first input character; give it to that
 			// process and awaken the process.
 			//
 
-			if( QLENGTH(READQ) > 0 ) {
+			if( QLENGTH(QNAME) > 0 ) {
 
-				QDEQUE( READQ, pcb );
+				QDEQUE( QNAME, pcb );
 				assert( pcb );
 
 				// return char via arg #2 and count in EAX
@@ -183,6 +181,7 @@ static void _sio_isr( int vector, int ecode ) {
 				SCHED( pcb );
 
 			} else {
+#endif
 
 				//
 				// Nobody waiting - add to the input buffer
@@ -194,7 +193,9 @@ static void _sio_isr( int vector, int ecode ) {
 					++_incount;
 				}
 
+#ifdef QNAME
 			}
+#endif
 			break;
 
 		case UA5_EIR_RX_FIFO_TIMEOUT_INT_PENDING:
@@ -251,8 +252,8 @@ static void _sio_isr( int vector, int ecode ) {
 
 		default:
 			// uh-oh....
-			__sprint( b256, "sio isr: eir %02x\n", ((uint32_t) eir) & 0xff );
-			PANIC( 0, b256 );
+			__sprint( _b256, "sio isr: eir %02x\n", ((uint32_t) eir) & 0xff );
+			PANIC( 0, _b256 );
 		}
 	
 	}

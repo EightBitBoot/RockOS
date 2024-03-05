@@ -1,9 +1,14 @@
-/*
+/**
 ** @file	params.h
 **
 ** @author	CSCI-452 class of 20235
 **
 ** @brief	System configuration settings
+**
+** This header file contains many of the "easily tunable" system
+** settings, such as clock rate, number of simultaneous user
+** processes, etc. This provides a sort of "one-stop shop" for
+** things that might be tweaked frequently.
 */
 
 #ifndef PARAMS_H_
@@ -26,6 +31,11 @@
 // at user-level (i.e., not created directly by the OS).
 
 #define	FIRST_USER_PID	2
+
+// Clock frequency (Hz)
+
+#define	CLOCK_FREQUENCY	1000
+#define	TICKS_PER_MS	1
 
 #ifndef SP_ASM_SRC
 

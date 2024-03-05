@@ -22,6 +22,7 @@
 #define STACKS_H_
 
 #include "common.h"
+
 #include "kmem.h"
 
 /*
@@ -46,26 +47,16 @@
 // our stack type
 typedef uint32_t stack_t[STACK_WORDS];
 
+// NOW we can include procs.h to get pcb_t
+
+#include "procs.h"
+
 /*
 ** Globals
 */
 
 /*
 ** Prototypes
-*/
-
-#ifdef	STATIC_STACKS
-
-/*
-*************************************
-*************************************
-** STATIC STACK VERSION            **
-**                                 **
-** This set of declarations are in **
-** use if stack allocation is done **
-** at compilation time.            **
-*************************************
-*************************************
 */
 
 /*
@@ -78,6 +69,7 @@ typedef uint32_t stack_t[STACK_WORDS];
 ** Initializes the stack module.
 **
 ** Dependencies:
+**    Cannot be called before kmem is initialized (dynamic allocation)
 **    Must be called before interrupt handling has begun
 **    Must be called before any process creation can be done
 */
@@ -105,49 +97,18 @@ stack_t *_stk_alloc( pcb_t *pcb );
 */
 void _stk_dealloc( uint32_t *stk );
 
-#else
-
-/*
-*************************************
-*************************************
-** DYNAMIC STACK VERSION           **
-**                                 **
-** This set of declarations are in **
-** use if stack allocation is done **
-** at run time.                    **
-*************************************
-*************************************
-*/
-
 /**
-** Name:	_stk_init()
+** _stk_dump(msg,stk,lim)
 **
-** Initializes the stack module.
+** Dumps the contents of a stack to the console.  Assumes the stack
+** is a multiple of four words in length.
 **
-** Dependencies:
-**    Cannot be called before kmem is initialized
-**    Must be called before interrupt handling has begun
-**    Must be called before any process creation can be done
+** @param msg   An optional message to print before the dump
+** @param stk   The stack to dump out
+** @param lim   Limit on the number of words to dump (0 for all)
 */
-void _stk_init( void );
 
-/**
-** Name:	_stk_alloc()
-**
-** Allocate a stack.
-**
-** @return pointer to a "clean" stack, or NULL
-*/
-stack_t *_stk_alloc( void );
-
-/**
-** _stk_dealloc() - deallocate a stack
-**
-** @param stk   The stack to be returned to the free list
-*/
-void _stk_dealloc( uint32_t *stk );
-
-#endif
+void _stk_dump( const char *msg, stack_t *stk, uint32_t limit );
 
 #endif
 // !SP_ASM_SRC

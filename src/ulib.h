@@ -54,6 +54,15 @@
 void exit( int32_t status );
 
 /**
+** sleep - put the current process to sleep for some length of time
+**
+** usage:   sleep(n);
+**
+** @param ms Desired sleep time (in ms), or 0 to yield the CPU
+*/
+void sleep( uint32_t ms );
+
+/**
 ** read - read into a buffer from a stream
 **
 ** usage:   n = read(channel,buf,length)
@@ -64,7 +73,7 @@ void exit( int32_t status );
 **
 ** @returns  The count of bytes transferred, or an error code
 */
-int read( int chan, void *buffer, uint32_t length );
+int32_t read( int32_t chan, void *buffer, uint32_t length );
 
 /**
 ** write - write from a buffer to a stream
@@ -77,20 +86,187 @@ int read( int chan, void *buffer, uint32_t length );
 **
 ** @returns  The count of bytes transferred, or an error code
 */
-int write( int chan, const void *buffer, uint32_t length );
+int32_t write( int32_t chan, const void *buffer, uint32_t length );
 
 /**
-** sleep - put the current process to sleep for some length of time
+** waitpid - wait for a child process to terminate
 **
-** usage:   sleep(n);
+** usage:   pid = waitpid(pid,&status);
 **
-** @param n Desired sleep time (in what units?), or 0 to yield the CPU
+** @param pid    PID of the desired child, or 0 for any child
+** @param status Pointer to int32_t into which the child's status is placed,
+**               or NULL
+**
+** @returns The PID of the terminated child, or an error code
+**
+** If there are no children in the system, returns an error code (*status
+** is unchanged).
+**
+** If there are one or more children in the system and at least one has
+** terminated but hasn't yet been cleaned up, cleans up that process and
+** returns its information; otherwise, blocks until a child terminates.
 */
-void sleep( uint32_t n );
+int32_t waitpid( pid_t pid, int32_t *status );
+
+/**
+** getdata - get some information from the OS
+**
+** usage:   n = getdata( which )
+**
+** @param which  which OS datum is to be retrieved
+**
+** @returns  the requested information, or -1 on error
+*/
+int32_t getdata( datum_t which );
+
+/**
+** setdata - set an OS value of some type
+**
+** usage:   n = setdata( which, value )
+**
+** @param which  which OS datum is to be modified
+** @param value  what to set that item to
+**
+** @returns  the previous value, or -1 on error
+*/
+int32_t setdata( datum_t which, int32_t value );
+
+/**
+** kill - terminate a process with extreme prejudice
+**
+** usage:   n = kill( pid )
+**
+** @param pid  the intended victim
+**
+** @returns  0 on success, else an error code
+*/
+int32_t kill( pid_t pid );
+
+/**
+** fork - create a duplicate of the calling process
+**
+** usage:   pid = fork();
+**
+** @returns  parent - the pid of the new child, or an error code
+**           child  - 0
+*/
+int32_t fork( void );
+
+/**
+** exec - replace the memory image of the calling process
+**
+** usage:   exec( entry, args )
+**
+** @param entry   the entry point of the new user code
+** @param args    the command-line argument vector
+**
+** @returns  does not return if it succeeds; else, an error code
+*/
+int32_t exec( userfcn_t entry, char *args[] );
+
+/**
+** bogus - a nonexistent system call, to test our syscall ISR
+**
+** usage:   bogus()
+**
+** Does not return.
+*/
+void bogus( void );
 
 /*
-** TODO remaining system calls
+**********************************************
+** CONVENIENT "SHORTHAND" VERSIONS OF SYSCALLS
+**********************************************
+**
+** These are library functions that perform specific common
+** variants of system calls. This helps reduce the total number
+** of system calls, keeping our baseline OS as lean and mean
+** as we can make it. :-)
 */
+
+/**
+** wait - wait for any child to exit
+**
+** usage:   pid = wait(&status)
+**
+** Calls waitpid(0,status)
+**
+** @param status Pointer to int32_t into which the child's status is placed,
+**               or NULL
+**
+** @returns The PID of the terminated child, or an error code
+*/
+int32_t wait( int32_t *status );
+
+/**
+** cwritech(ch) - write a single character to the console
+**
+** @param ch The character to write
+**
+** @returns The return value from calling write()
+*/
+int32_t cwritech( char ch );
+
+/**
+** cwrites(str) - write a NUL-terminated string to the console
+**
+** @param str The string to write
+**
+*/
+int32_t cwrites( const char *str );
+
+/**
+** cwrite(buf,leng) - write a sized buffer to the console
+**
+** @param buf  The buffer to write
+** @param leng The number of bytes to write
+**
+** @returns The return value from calling write()
+*/
+int32_t cwrite( const char *buf, uint32_t leng );
+
+/**
+** swritech(ch) - write a single character to the SIO
+**
+** @param ch The character to write
+**
+** @returns The return value from calling write()
+*/
+int32_t swritech( char ch );
+
+/**
+** swrites(str) - write a NUL-terminated string to the SIO
+**
+** @param str The string to write
+**
+** @returns The return value from calling write()
+*/
+int32_t swrites( const char *str );
+
+/**
+** swrite(buf,leng) - write a sized buffer to the SIO
+**
+** @param buf  The buffer to write
+** @param leng The number of bytes to write
+**
+** @returns The return value from calling write()
+*/
+int32_t swrite( const char *buf, uint32_t leng );
+
+/**
+** spawn(entry,prio,args) - create a new process running a different program
+**
+** usage:       n = spawn(entry,prio,args)
+**
+** Creates a new process, changes its priority, and then execs 'entry'
+**
+** @param entry The entry point of the new code
+** @param prio  The desired priority for the process, or -1
+** @param args  The command-line argument vector for the process
+**
+** @returns     The PID of the child, or an error code
+*/
+int32_t spawn( userfcn_t entry, int32_t prio, char *args[] );
 
 /*
 **********************************************

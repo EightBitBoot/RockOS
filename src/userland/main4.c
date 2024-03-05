@@ -10,46 +10,58 @@
 ** Loops, spawning N copies of userX and sleeping between spawns.
 **
 ** Invoked as:  main4  x  n
-**   where x is the ID character
-**         n is the iteration count (defaults to 5)
+**	 where x is the ID character
+**		   n is the iteration count (defaults to 5)
 */
 
 USERMAIN( main4 ) {
-    int count = 5;          // default iteration count
-    char ch = '4';          // default character to print
-    int nap = 30;           // nap time
-    char msg2[] = "*4*";    // "error" message to print
-    char buf[32];
+	int count = 5;			// default iteration count
+	char ch = '4';			// default character to print
+	int nap = 30;			// nap time
+	char msg2[] = "*4*";	// "error" message to print
+	char buf[32];
 
-    // process the command-line arguments
-    ARG_PROC( 3, args, 5, nargs, "main4" );
-    if( nargs == 3 ) {
-        ch = argv[1][0];
-        count = str2int( argv[2], 10 );
-    }
+	// process the command-line arguments
+	switch( argc ) {
+	case 3:	count = str2int( argv[2], 10 );
+			// FALL THROUGH
+	case 2:	ch = argv[1][0];
+			break;
+	default:
+			sprint( buf, "main4: argc %d, args: ", argc );
+			cwrites( buf );
+			for( int i = 0; i <= argc; ++i ) {
+				sprint( buf, " %s", argv[argc] ? argv[argc] : "(null)" );
+				cwrites( buf );
+			}
+			cwrites( "\n" );
+	}
 
-    // announce our presence
-    write( CHAN_SIO, &ch, 1 );
+	// announce our presence
+	write( CHAN_SIO, &ch, 1 );
 
-    for( int i = 0; i < count ; ++i ) {
+	// argument vector for the processes we will spawn
+	char *arglist[] = { "userX", "X", buf, NULL };
 
-        write( CHAN_SIO, &ch, 1 );
+	for( int i = 0; i < count ; ++i ) {
 
-        // second argument to X is 100 plus the iteration number
-        sprint( buf, "userX\rX\r%d", 100 + i );
-        int whom = spawn( userX, User, strlen(buf)+1, buf );
-        if( whom < 0 ) {
-            swrites( msg2 );
-        } else {
-            write( CHAN_SIO, &ch, 1 );
-        }
+		write( CHAN_SIO, &ch, 1 );
 
-        sleep( SEC_TO_MS(nap) );
-    }
+		// second argument to X is 100 plus the iteration number
+		sprint( buf, "%d", 100 + i );
+		int whom = spawn( userX, UserPrio, arglist );
+		if( whom < 0 ) {
+			swrites( msg2 );
+		} else {
+			write( CHAN_SIO, &ch, 1 );
+		}
 
-    exit( 0 );
+		sleep( SEC_TO_MS(nap) );
+	}
 
-    return( 42 );  // shut the compiler up!
+	exit( 0 );
+
+	return( 42 );  // shut the compiler up!
 }
 
 #endif

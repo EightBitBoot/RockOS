@@ -46,9 +46,10 @@
 
 #define SP_KERNEL_SRC
 
-// compatibility definitions; also includes common.
+// compatibility definitions; also includes common.h
 #include "compat.h"
 
+// all other framework includes are next
 #include "lib.h"
 
 #include <x86arch.h>
@@ -662,7 +663,7 @@ void *_km_slice_alloc( void ) {
 
 	// take the first one from the free list
 	slice = _free_slices;
-	assert( slice);
+	assert( slice != NULL );
 
 	// unlink it
 	_free_slices = slice->next;

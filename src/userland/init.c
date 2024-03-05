@@ -1,7 +1,14 @@
+/**
+** This source file contains two user programs: 'init' and 'shell'.
+** This is done to simplify life when the shell is being used, as it
+** makes use of the same "spawn table" as 'init'.
+*/
+
 #ifndef INIT_H_
 #define INIT_H_
 
 #include "users.h"
+
 #include "ulib.h"
 
 /**
@@ -9,30 +16,19 @@
 **
 ** Prints a message at startup, '+' after each user process is spawned,
 ** and '!' before transitioning to wait() mode to the SIO, and
-** startup and transition messages to the console.  It also reports
+** startup and transition messages to the console. It also reports
 ** each child process it collects via wait() to the console along
 ** with that child's exit status.
 */
 
 /*
 ** For the test programs in the baseline system, command-line arguments
-** follow these rules.  The first (up to) three entries will be strings
-** containing the following things:
+** follow these rules. The first two entries are as follows:
 **
-**      argv[0] the name used to "invoke" this process
-**      argv[1] the "character to print" (identifies the process)
-**      argv[2] either an iteration count or a sleep time
+**	argv[0] the name used to "invoke" this process
+**	argv[1] the "character to print" (identifies the process)
 **
-** These are 'encoded' as a C string literal with carriage returns as
-** the argument separators; e.g., if a program is being run as 'userA',
-** prints the character 'A', and iterates 30 times, the arg string
-** would be
-**
-**      "userA\rA\r30"
-**
-** The ARG_PROC macro (in users.h) will parse this into a traditional
-** argv array containing "userA", "A", and "30", followed by a NULL
-** pointer, using the parseArgString() library function.
+** Most user programs have one or more additional arguments.
 **
 ** See the comment at the beginning of each user-code source file for
 ** information on the argument list that code expects.
@@ -42,222 +38,415 @@
 ** "Spawn table" process entry.
 */
 typedef struct proc_s {
-    int32_t (*entry)( uint32_t, void *);    // entry point
-    uint32_t prio;                          // process priority
-    uint32_t len;                           // argument buffer length
-    const void *buf;                        // argument buffer
-} Proc;
+	int32_t (*entry)(int32_t,char**);	// entry point
+	prio_t prio;			// process priority
+	char select[3];			// identifying character, NUL, extra
+	char *args[MAX_ARGS];	// argument vector strings
+} proc_t;
 
 /*
-** Create a spawn table entry for a process with a  string literal
-** as its argument buffer.  This relies on the fact that sizeof()
-** applied to a string literal produces a byte count that includes
-** the trailing NUL character - e.g., sizeof("abc") is 4.
+** Create a spawn table entry for a process with astring literal
+** as its argument buffer.	We rely on the fact that the C standard
+** ensures our array of pointers will be filled out with NULLs
 */
-#define PROCENT(e,p,a) { e, p, sizeof(a), (void *) a }
+#define PROCENT(e, p, s, ...) { e, p, s, { __VA_ARGS__ , NULL } }
 
 /*
-** The spawn table.  Each entry represents one process that is to
-** be started by init().
+** We have two spawn tables. The first one contains all user-level
+** processes that may be spawned either by 'init' or 'shell'; the second
+** contains processes that will only be started by 'init' (e.g., the
+** idle process, and the shell if that is being used).
+**
+** The primary spawn table, used by 'init' and 'shell'.
 */
-Proc spawnTable[] = {
+static proc_t spawn_table[] = {
 
-    // the idle process; it runs at Deferred priority,
-    // so it will only be dispatched when there is
-    // nothing else available to be dispatched
-    PROCENT( idle, Deferred, "idle\r." ),
-
-#ifdef SPAWN_SHELL
-    // spawn a "test shell" process; it runs at System
-    // priority, so it takes precedence over all other
-    // user-level processes when it's not sleeping
-    PROCENT( shell, System, "shell" ),
-#endif
-
-    // Users A-C each run main1, which loops printing its character
+	// Users A-C each run main1, which loops printing its character
 #ifdef SPAWN_A
-    PROCENT( main1, User, "userA\rA\r30" ),
+	PROCENT( main1, UserPrio, "A", "userA", "A", "30" ),
 #endif
 #ifdef SPAWN_B
-    PROCENT( main1, User, "userB\rB\r30" ),
+	PROCENT( main1, UserPrio, "B", "userB", "B", "30" ),
 #endif
 #ifdef SPAWN_C
-    PROCENT( main1, User, "userC\rC\r30" ),
+	PROCENT( main1, UserPrio, "C", "userC", "C", "30" ),
 #endif
 
-    // Users D and E run main2, which is like main1 but doesn't exit()
+	// Users D and E run main2, which is like main1 but doesn't exit()
 #ifdef SPAWN_D
-    PROCENT( main2, User, "userD\rD\r20" ),
+	PROCENT( main2, UserPrio, "D", "userD", "D", "20" ),
 #endif
 #ifdef SPAWN_E
-    PROCENT( main2, User, "userE\rE\r20" ),
+	PROCENT( main2, UserPrio, "E", "userE", "E", "20" ),
 #endif
 
-    // Users F and G run main3, which sleeps between write() calls
+	// Users F and G run main3, which sleeps between write() calls
 #ifdef SPAWN_F
-    PROCENT( main3, User, "userF\rF\r20" ),
+	PROCENT( main3, UserPrio, "F", "userF", "F", "20" ),
 #endif
 #ifdef SPAWN_G
-    PROCENT( main3, User, "userG\rG\r10" ),
+	PROCENT( main3, UserPrio, "G", "userG", "G", "10" ),
 #endif
 
-    // User H tests reparenting of orphaned children
+	// User H tests reparenting of orphaned children
 #ifdef SPAWN_H
-    PROCENT( userH, User, "userH\rH\r4" ),
+	PROCENT( userH, UserPrio, "H", "userH", "H", "4" ),
 #endif
 
-    // User I spawns several children, kills one, and waits for all
+	// User I spawns several children, kills one, and waits for all
 #ifdef SPAWN_I
-    PROCENT( userI, User, "userI\rI" ),
+	PROCENT( userI, UserPrio, "I", "userI", "I" ),
 #endif
 
-    // User J tries to spawn 2 * N_PROCS children
+	// User J tries to spawn 2 * N_PROCS children
 #ifdef SPAWN_J
-    PROCENT( userJ, User, "userJ\rJ" ),
+	PROCENT( userJ, UserPrio, "J", "userJ", "J" ),
 #endif
 
-    // Users K and L iterate spawning userX and sleeping
+	// Users K and L iterate spawning userX and sleeping
 #ifdef SPAWN_K
-    PROCENT( main4, User, "userK\rK\r8" ),
+	PROCENT( main4, UserPrio, "K", "userK", "K", "8" ),
 #endif
 #ifdef SPAWN_L
-    PROCENT( main4, User, "userL\rL\r5" ),
+	PROCENT( main4, UserPrio, "L", "userL", "L", "5" ),
 #endif
 
-    // Users M and N spawn copies of userW and userZ via main5
+	// Users M and N spawn copies of userW and userZ via main5
 #ifdef SPAWN_M
-    PROCENT( main5, User, "userM\rM\rf\r5" ),
+	PROCENT( main5, UserPrio, "M", "userM", "M", "5", "f" ),
 #endif
 #ifdef SPAWN_N
-    PROCENT( main5, User, "userN\rN\rt\r5" ),
+	PROCENT( main5, UserPrio, "N", "userN", "N", "5", "t" ),
 #endif
 
-    // There is no user O
+	// There is no user O
 
-    // User P iterates, reporting system time and stats, and sleeping
+	// User P iterates, reporting system time and stats, and sleeping
 #ifdef SPAWN_P
-    PROCENT( userP, User, "userP\rP\r3\r2" ),
+	PROCENT( userP, UserPrio, "P", "userP", "P", "3", "2" ),
 #endif
 
-    // User Q tries to execute a bad system call
+	// User Q tries to execute a bad system call
 #ifdef SPAWN_Q
-    PROCENT( userQ, User, "userQ\rQ" ),
+	PROCENT( userQ, UserPrio, "Q", "userQ", "Q" ),
 #endif
 
-    // User R reads from the SIO one character at a time, forever
+	// User R reads from the SIO one character at a time, forever
 #ifdef SPAWN_R
-    PROCENT( userR, User, "userR\rR\r10" ),
+	PROCENT( userR, UserPrio, "R", "userR", "R", "10" ),
 #endif
 
-    // User S loops forever, sleeping on each iteration
+	// User S loops forever, sleeping 13 sec. on each iteration
 #ifdef SPAWN_S
-    PROCENT( userS, User, "userS\rS\r20" ),
+	PROCENT( userS, UserPrio, "S", "userS", "S", "13" ),
 #endif
 
-    // Users T-V run main6(); they spawn copies of userW
-    //   User T waits for any child
-    //   User U waits for each child by PID
-    //   User V kills each child
+	// Users T-V run main6(); they spawn copies of userW
+	//	 User T waits for any child
+	//	 User U waits for each child by PID
+	//	 User V kills each child
 #ifdef SPAWN_T
-    PROCENT( main6, User, "userT\rT\rw\r6" ),
+	PROCENT( main6, UserPrio, "T", "userT", "T", "6", "w" ),
 #endif
 #ifdef SPAWN_U
-    PROCENT( main6, User, "userU\rU\rW\r6" ),
+	PROCENT( main6, UserPrio, "U", "userU", "U", "6", "W" ),
 #endif
 #ifdef SPAWN_V
-    PROCENT( main6, User, "userV\rV\rk\r6" ),
+	PROCENT( main6, UserPrio, "V", "userV", "V", "6", "k" ),
 #endif
-    
-    // a dummy entry to use as a sentinel
-    { 0, 0, 0, 0 }
+	
+	// a dummy entry to use as a sentinel
+	// PROCENT( 0, 0, 0, 0 )
+	{ 0 }
 };
 
-USERMAIN( init ) {
-    char ch;
-    static int invoked = 0;
-    char buf[128];
+/*
+** The secondary table. These are processes started by 'init', but
+** not available to be started by other processes (such as by the
+** shell). Confusingly, these will be started before the processes
+** listed in the primary table (above).
+*/
+static proc_t spawn_table_2[] = {
 
-    if( invoked > 0 ) {
-        cwrites( "*** INIT RESTARTED??? ***\n" );
-        for(;;);
-    }
+	// the idle process; it runs at Deferred priority,
+	// so it will only be dispatched when there is
+	// nothing else available to be dispatched
+	PROCENT( idle, DeferredPrio, "!", "idle", "." ),
 
-    cwrites( "Init started\n" );
-    ++invoked;
+#ifdef SPAWN_SHELL
+	// spawn a "test shell" process; it runs at System
+	// priority, so it takes precedence over all other
+	// user-level processes when it's not sleeping or
+	// waiting for input
+	PROCENT( shell, SysPrio, "@", "shell" ),
+#endif
 
-    // process the command line
-    ARG_PROC( 2, args, 5, nargs, "init" );
+	// PROCENT( 0, 0, 0, 0 )
+	{ 0 }
+};
 
-    if( argv[1] == NULL ) {
-        ch = '+';
-    } else {
-        ch = argv[1][0];
-    }
+/**
+** process - spawn all user processes listed in the supplied table
+**
+** @param ch    character identifying the process who called this function
+** @param table table containing the processes to be started
+*/
 
-    // home up, clear on a TVI 925
-    swritech( '\x1a' );
+static void process( char ch, proc_t *table )
+{
+	proc_t *next = table;
+	char buf[128];
 
-    // wait a bit
-    DELAY(SHORT);
+	while( next->entry != NULL ) {
 
-    // a bit of Dante to set the mood
-    swrites( "\n\nSpem relinquunt qui huc intrasti!\n\n\r" );
+		// kick off the process
+		int32_t p = fork();
+		if( p < 0 ) {
 
-    /*
-    ** Start all the user processes
-    */
+			// error!
+			sprint( buf, "INIT: fork for 0x%08x failed\n",
+					(uint32_t) (next->entry) );
+			cwrites( buf );
 
-    cwrites( "INIT: starting user processes\n" );
+		} else if( p == 0 ) {
 
-    int whom = 0;
-    Proc *next = spawnTable;
+			// child - first change the priority
+			int32_t old = setdata( Prio, next->prio );
+			if( old < 0 ) {
+				sprint( buf, "INIT: set prio for %d to %d, code %d\n",
+						p, next->prio, old );
+				cwrites( buf );
+			}
 
-    while( next->entry != NULL ) {
+			// now, send it on its way
+			exec( next->entry, next->args );
 
-        // kick off the process
-        whom = spawn( next->entry, next->prio, next->len, next->buf );
-        if( whom < 1 ) {
-            // error!
-            sprint( buf, "INIT: spawn 0x%08x failed, code %d\n",
-                    (uint32_t) (next->entry), whom );
-            cwrites( buf );
-        } else {
-            swritech( ch );
-        }
+			// uh-oh - should never get here!
+			sprint( buf, "INIT: exec(0x%08x) failed\n",
+					(uint32_t) (next->entry) );
+			cwrites( buf );
 
-        ++next;
-    }
+		} else {
 
-    swrites( " !!!\r\n\n" );
+			// parent just reports that another one was started
+			swritech( ch );
 
-    /*
-    ** At this point, we go into an infinite loop waiting
-    ** for our children (direct, or inherited) to exit.
-    */
+		}
 
-    cwrites( "INIT: transitioning to wait() mode\n" );
-
-    for(;;) {
-        int32_t status;
-        int whom = waitpid( 0, &status );
-
-        // PIDs must be positive numbers!
-        if( whom <= 0 ) {
-            // cwrites( "INIT: wait() says 'no children'???\n" );
-        } else {
-            sprint( buf, "INIT: %d exit(%d)\n", whom, status );
-            cwrites( buf );
-        }
-    }
-
-    /*
-    ** SHOULD NEVER REACH HERE
-    */
-
-    cwrites( "*** INIT IS EXITING???\n" );
-    exit( 1 );
-
-    return( 0 );  // shut the compiler up!
+		++next;
+	}
 }
+
+/*
+** The initial user process. Should be invoked with zero or one
+** argument; if provided, the first argument should be the ASCII
+** character 'init' will print to indicate the spawning of a process.
+*/
+USERMAIN( init )
+{
+	char ch;
+	static int invoked = 0;
+	char buf[128];
+
+	if( invoked > 0 ) {
+		cwrites( "*** INIT RESTARTED??? ***\n" );
+		for(;;);
+	}
+
+	cwrites( "Init started\n" );
+	++invoked;
+
+	// there will always be an argv[1]
+	if( argv[1] == NULL ) {
+		ch = '+';
+	} else {
+		ch = argv[1][0];
+	}
+
+	// home up, clear on a TVI 925
+	swritech( '\x1a' );
+
+	// wait a bit
+	DELAY(SHORT);
+
+	// a bit of Dante to set the mood :-)
+	swrites( "\n\nSpem relinquunt qui huc intrasti!\n\n\r" );
+
+	/*
+	** Start all the user processes
+	*/
+
+	cwrites( "INIT: starting user processes\n" );
+
+	process( ch, spawn_table_2 );
+	process( ch, spawn_table );
+
+	swrites( " !!!\r\n\n" );
+
+	/*
+	** At this point, we go into an infinite loop waiting
+	** for our children (direct, or inherited) to exit.
+	*/
+
+	cwrites( "INIT: transitioning to wait() mode\n" );
+
+	for(;;) {
+		int32_t status;
+		int32_t whom = waitpid( 0, &status );
+
+		// PIDs must be positive numbers!
+		if( whom <= 0 ) {
+			cwrites( "INIT: waitpid() said 'no children'???\n" );
+		} else {
+			sprint( buf, "INIT: pid %d exit(%d)\n", whom, status );
+			cwrites( buf );
+		}
+	}
+
+	/*
+	** SHOULD NEVER REACH HERE
+	*/
+
+	cwrites( "*** INIT IS EXITING???\n" );
+	exit( 1 );
+
+	return( 1 );  // shut the compiler up
+}
+
+#ifdef SPAWN_SHELL
+
+/**
+** run - look up and spawn the requested process
+**
+** performs case-independent comparisons
+**
+** @param which - character indicating which process to spawn
+**
+** @return the result from spawn(), or -90210 on error
+*/
+static int32_t run( char which )
+{
+    char buf[128];
+	proc_t *curr;
+	char c1 = which | 0x20;	// map to lowercase
+
+	for( curr = spawn_table; curr->entry != 0; ++curr ) {
+		char ch = *(curr->select) | 0x20;
+		if( which == ch ) {
+			return spawn( curr->entry, curr->prio, &(curr->args) );
+		}
+	}
+
+   sprint( buf, "+++ Shell: unknown cmd '%c'\n", which );
+   cwrites( buf );
+
+    // unlikely to be an actual error code
+    return( -90210 );
+};
+
+
+/**
+** help - print the list of available commands
+*/
+static void help( void )
+{
+
+    swrites( "\nAvailable commands:\n" );
+    swrites( " Spawn a process: " );
+
+	proc_t *curr = spawn_table;
+	while( curr->entry != NULL ) {
+		swrites( curr->select );
+		++curr;
+	}
+    swrites( "\n Help:  ?\n Exit:	*\n" );
+
+}
+
+/**
+** shell - extremely simple shell for spawning test programs
+**
+** Scheduled by _kshell() when the character 'u' is typed on
+** the console keyboard.
+*/
+USERMAIN( shell )
+{
+    char buf[128];
+    char ch;
+
+    // keep the compiler happy
+    (void) arglen;
+    (void) args;
+
+    // report that we're up and running
+    cwrites( "+++ Shell is ready\n" );
+    swritech( '@' );
+
+    // loop forever
+    for(;;) {
+
+	   // prompt for the next command
+	   swrites( "\n@ " );
+	   int n = read( CHAN_SIO, &ch, 1 );
+	   if( n < 1 ) {
+		  sprint( buf, "+++ Shell input error, code %d\n", n );
+		  cwrites( buf );
+		  continue;
+	   }
+
+	   // process the current command
+	   if( ch == '?' ) {
+
+		  // "help"
+		  help();
+
+	   } else if( ch == '*' ) {
+
+		  // "exit"
+		  break;
+
+	   } else {
+
+		  // find the command character
+		  int pid = run( ch );
+
+		  if( pid == -90210 ) {
+
+			 // bad command
+			 help();
+
+		  } else if( pid < 1 ) {
+
+			 // spawn() failed
+			 sprint( buf, "+++ Shell spawn %c failed, code %d\n", ch, pid );
+			 cwrites( buf );
+
+		  } else {
+
+			 // wait for the process to terminate
+			 int32_t status;
+			 whom = waitpid( pid, &status );
+
+			 // figure out the result
+			 if( whom != pid ) {
+				sprint( buf, "shell: waitpid() returned %d\n", whom );
+			 } else {
+				sprint( buf, "shell: PID %d exit status %d\n",
+					   whom, status );
+			 }
+			 // report it
+			 swrites( buf );
+		  }
+
+	   }
+
+    }
+
+    cwrites( "+++ Shell exiting\n" );
+    exit( 0 );
+}
+
+#endif
+// SPAWN_SHELL
 
 #endif

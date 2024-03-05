@@ -1,13 +1,15 @@
 /**
 ** @file	users.h
 **
-** @author	CSCI-452 class of 20225
+** @author	CSCI-452 class of 20235
 **
 ** @brief	"Userland" configuration information
 */
 
 #ifndef USERS_H_
 #define USERS_H_
+
+#include "common.h"
 
 /*
 ** General (C and/or assembly) definitions
@@ -38,15 +40,24 @@
         for(int _dlc = 0; _dlc < (DELAY_##n); ++_dlc) continue; \
     } while(0)
 
-// Entry point definition
+/*
+** All user main() functions have the following prototype:
+**
+**	int32_t name( int32_t argc, char *argv[] );
+**
+** To simplify declaring them, we define a macro that expands into
+** that header. This can be used both in the implementation (followed
+** by the function body) and in places where we just need the prototype
+** (following it with a semicolon).
+*/
 
-#define USERMAIN(f)	int32_t f( uint32_t arglen, void *args )
+#define USERMAIN(f)	int32_t f( int32_t argc, char *argv[] )
 
 /*
 ** System call matrix
 **
-** System calls in this system:   exit, spawn, read, write, sleep,
-**  kill, waitpid.
+** System calls in this system:   exit, sleep, read, write, wtpid,
+**  getdata, setdata, kill, fork, exec.
 **
 ** There is also a "bogus" system call which attempts to use an invalid
 ** system call code; this should be caught by the syscall handler and
@@ -54,32 +65,46 @@
 **
 ** These are the system calls which are used in each of the user-level
 ** main functions.  Some main functions only invoke certain system calls
-** when given particular command-line arguments (e.g., main6).
+** when given particular command-line arguments.
 **
 ** Note that some system calls are nested inside library functions - e.g.,
-** cwrite() performs write(), etc.
+** cwrite*() and swrite*() perform write(), etc.
+**
+** main1 runs for userA, userB, and userC
+** main2 runs for userD and userE
+** main3 runs for userF and userG
+** main4 runs for userK and userL
+** main5 runs for userM and userN
+** main6 runs for userT, userU, and userV
+** all others run individual main functions
+**
 **
 **                        baseline system calls in use
-**  fcn   exit  read  write sleep ...
-** -----  ----- ----- ----- -----
-** main1    .     .     .     .
-** main2    .     .     .     .
-** main3    .     .     .     .
-** main4    .     .     .     .
-** main5    .     .     .     .
-** main6    .     .     .     .
-** ..............................
-** userH    .     .     .     .
-** userI    .     .     .     .
-** userJ    .     .     .     .
-** userP    .     .     .     .
-** userQ    .     .     .     .
-** userR    .     .     .     .
-** userS    .     .     .     .
-** userW    .     .     .     .
-** user.    .     .     .     .
-** userY    .     .     .     .
-** userZ    .     .     .     .
+**  fcn   exit  sleep read  write wtpid gdata sdata kill  fork  exec  bogus
+** -----  ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
+** init     X     X     .     X     X     .     X     .     X     X     .
+** idle     X     .     .     X     .     X     .     .     .     .     .
+** shell    .     .     X     X     X     .     X     .     X     X     .
+** -----  ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
+** main1    X     .     .     X     .     .     .     .     .     .     .
+** main2    .     .     .     X     .     .     .     .     .     .     .
+** main3    X     X     .     X     .     .     .     .     .     .     .
+** main4    X     X     .     X     .     .     X     .     X     X     .
+** main5    X     .     .     X     .     .     X     .     X     X     .
+** main6    X     X     .     X     X     .     X     X     X     X     .
+** ........................................................................
+** userH    X     X     .     X     .     .     X     .     X     X     .
+** userI    X     X     .     X     X     .     X     X     X     X     .
+** userJ    X     .     .     X     .     .     X     .     X     X     .
+** userP    X     X     .     X     .     X     .     .     .     .     .
+** userQ    X     .     .     X     .     .     .     .     .     .     X
+** userR    X     X     X     X     .     .     .     .     .     .     .
+** userS    X     X     .     X     .     .     .     .     .     .     .
+** userW    X     X     .     X     .     X     .     .     .     .     .
+** userX    X     .     .     X     .     X     .     .     .     .     .
+** userY    X     .     .     X     .     X     .     .     .     .     .
+** userZ    X     X     .     .     .     .     .     .     .     .     .
+** ........................................................................
 */
 
 /*
@@ -134,7 +159,7 @@
 **
 ** Invoked as:  init
 */
-int32_t init( uint32_t arglen, void *args );
+USERMAIN(init);
 
 /**
 ** idle - the idle process
@@ -143,7 +168,7 @@ int32_t init( uint32_t arglen, void *args );
 **
 ** Invoked as:  idle
 */
-int32_t idle( uint32_t arglen, void *args );
+USERMAIN(idle);
 
 #endif
 /* SP_ASM_SRC */

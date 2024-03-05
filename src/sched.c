@@ -10,6 +10,7 @@
 
 #include "common.h"
 
+#include "kernel.h"
 #include "sched.h"
 
 /*
@@ -31,6 +32,9 @@
 // the ready queue
 queue_t _ready[N_PRIOS];
 
+// the currently-executing process
+pcb_t *_current;
+
 /*
 ** PRIVATE FUNCTIONS
 */
@@ -46,12 +50,13 @@ queue_t _ready[N_PRIOS];
 */
 void _sch_init( void )
 {
-	// TODO anything else we need to do here?
-
 	// create all the ready queues as FIFO queues
 	for( int i = 0; i < N_PRIOS; ++i ) {
 		_que_create( &_ready[i], NULL );
 	}
+
+	// there is no current process (yet)
+	_current = NULL;
 
 	__cio_puts( " SCH" );
 }
@@ -67,30 +72,47 @@ void _sch_init( void )
 */
 status_t _schedule( pcb_t *pcb )
 {
-	// TODO sanity check?
+	// sanity check?
+	assert1( pcb != NULL );
 	
 	// get the scheduling priority for this process
-	prio_t n = pcb->prio;
+	prio_t n = pcb->priority;
 
-	// TODO check the priority for validity?
+	// check the priority for validity?
+	assert( n >= SysPrio && n < N_PRIOS );
 
 	// mark the process as ready to execute
 	pcb->state = Ready;
 
 	// add the process to the relevant queue
 	return _que_insert( &_ready[n], pcb );
+}
 
 /**
 ** Name:	_dispatch()
 **
 ** Select the next process to run from the ready queue.
 */
-status_t _dispatch( void )
+void _dispatch( void )
 {
-	// TODO
+	// find an available process to dispatch
+	int n = SysPrio;
+	while( n < N_PRIOS && QUE_IS_EMPTY(&_ready[n]) ) {
+		++n;
+	}
+
+	// if we don't have one, we are in deep trouble!
+	assert( n < N_PRIOS );
+
+	// found one; pull it off the queue, but blow up
+	// if that fails
+	void *data;
+	assert( _que_remove(&_ready[n],&data) == S_OK );
+
+	// make it the current process
+	_current = (pcb_t *) data;
+
+	// now a running process with the standard quantum
+	_current->state = Running;
+	_current->ticks_left = Q_STD;
 }
-
-#endif
-// !SP_ASM_SRC
-
-#endif

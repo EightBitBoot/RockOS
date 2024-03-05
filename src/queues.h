@@ -25,6 +25,7 @@
 ** Pseudo-functions
 */
 
+#define	QUE_LENGTH(q)	((q)->length)
 #define	QUE_IS_FIFO(q)	((q)->compare == NULL)
 #define	QUE_IS_EMPTY(q)	((q)->length == 0)
 
@@ -116,7 +117,7 @@ status_t _que_peek( queue_t *q, void **data );
 **
 ** @return The insertion status
 */
-void _que_insert( queue_t *q, compare_t compare );
+status_t _que_insert( queue_t *q, void *data );
 
 /**
 ** Name:  _que_remove

@@ -19,6 +19,14 @@
 #ifndef COMPAT_H_
 #define COMPAT_H_
 
+// any includes of "local" headers should be done here
+#include "common.h"
+
+#include "queues.h"
+#include "procs.h"
+#include "sched.h"
+#include "kernel.h"
+
 /*
 ** Section 1:  sized integer types
 **
@@ -57,10 +65,10 @@
 */
 
 // type name for the PCB
-// #define pcb_t    ?
+#define PCBTYPE		pcb_t
 
 // type name for our queue
-// #define queue_t  ?
+#define QTYPE		queue_t
 
 /*
 ** Section 3:  interface and behavior
@@ -74,11 +82,11 @@
 */
 
 // string functions
-#define SLENGTH     ?
+#define SLENGTH		__strlen
 
 // scheduler
-#define SCHED       ?
-#define DISPATCH    ?
+#define SCHED		_schedule
+#define DISPATCH	_dispatch
 
 /*
 ** blocked queue for reading processes
@@ -86,7 +94,7 @@
 ** Define this if we are blocking processes which try to
 ** read from the SIO when no characters are available
 */
-// #define QNAME      ?
+#define QNAME		_sio_readq
 
 #ifdef QNAME
 
@@ -96,15 +104,17 @@
 // the appropriate functions.
 
 // invoke the queue creation function
-#define QCREATE(q)      do { q = Q_ALLOC( NULL ); } while(0)
+#define QCREATE(q)	do { \
+		_que_create( &QNAME, NULL ); \
+	} while(0)
 
 // invoke the queue "length" function
-#define QLENGTH(q)    Q_LEN( q )
+#define QLENGTH(q)	QUE_LENGTH(&(q))
 
 // this macro expands into code that removes a value from
 // 'q' and places it into 'd'
-#define QDEQUE(q,d)     do { \
-        assert( Q_REM( q, (Payload *) &(d) ) ); \
+#define QDEQUE(q,d)	do { \
+        assert( _que_remove( &(q), (void **) &(d) ) == S_OK ); \
     } while(0)
 
 #endif

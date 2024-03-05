@@ -10,13 +10,13 @@ Naming convention:
     init()      classic 'init' process; starts the other user-level
                 processes based on the SPAWN_* macros in users.h
 
+    shell()	"user shell" process, for spawning individual tests
+
     mainN()     generic main function, used by several user processes
                 with different command-line args
 
     userX()     "one-task" main function; may be started by multiple
                 user processes
-
-    shell()	"user shell" process, for spawning individual tests
 
 All of these accept at least one command-line argument.  All are invoked
 with command lines of this form:
@@ -27,6 +27,11 @@ Each of these is designed to be #included into the users.c file in the
 parent directory.  However, they can be compiled and linked separately
 if that is desired (e.g., if VM is being implemented for user address
 space separation).
+
+The source code in each file is protected by #ifdef statements that are
+controlled by the SPAWN_* macros defined in the users.h header file. This
+allows us to ensure that each user-level source file is only compiled
+once even if it is #included into the users.c file several times.
 
 To compile and link these into separate executables, each must be linked
 with the two user library objects (ulibc.o and ulibs.o) from the

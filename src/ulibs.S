@@ -38,10 +38,22 @@ name:					; \
 */
 
 SYSCALL(exit)
+SYSCALL(sleep)
 SYSCALL(read)
 SYSCALL(write)
-SYSCALL(sleep)
+SYSCALL(waitpid)
+SYSCALL(getdata)
+SYSCALL(setdata)
+SYSCALL(kill)
+SYSCALL(fork)
+SYSCALL(exec)
+
 /*
-** TODO remaining system calls
+** This is a bogus system call; it's here so that we can test
+** our handling of out-of-range syscall codes in the syscall ISR.
+*/
+SYSCALL(bogus)
+
+/*
 ** TODO any other assembly-language library functions
 */
