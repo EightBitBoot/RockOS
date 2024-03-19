@@ -151,7 +151,12 @@ typedef int32_t status_t;
 ** Makefile.  The value of that macro is a bit mask.
 */
 
-#ifdef TRACE
+#ifndef TRACE
+// default trace level: trace nothing
+#define	TRACE	0
+#endif
+
+#if TRACE > 0
 
 // bits for selecting the thing(s) to be traced
 #define TRACE_PCB           0x0001
@@ -194,7 +199,7 @@ typedef int32_t status_t;
 
 #else
 
-// TRACE is undefined, so just define these all as "false"
+// TRACE == 0, so just define these all as "false"
 
 #define TRACING_PCB         0
 #define TRACING_STACK       0

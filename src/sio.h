@@ -37,7 +37,7 @@
 */
 
 // queue for read-blocked processes
-extern queue_t _reading;
+extern QTYPE QNAME;
 
 /*
 ** PUBLIC FUNCTIONS

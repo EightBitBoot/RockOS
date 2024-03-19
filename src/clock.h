@@ -10,6 +10,7 @@
 #define CLOCK_H_
 
 #include "common.h"
+
 #include "queues.h"
 
 /*
@@ -45,6 +46,9 @@
 
 // current system time
 extern time_t _system_time;
+
+// queue of sleeping processes
+extern queue_t _sleeping;
 
 /*
 ** Prototypes

@@ -59,8 +59,10 @@ void exit( int32_t status );
 ** usage:   sleep(n);
 **
 ** @param ms Desired sleep time (in ms), or 0 to yield the CPU
+**
+** @return E_SUCCESS, or an error code if the sleep couldn't be performed
 */
-void sleep( uint32_t ms );
+int32_t sleep( uint32_t ms );
 
 /**
 ** read - read into a buffer from a stream
@@ -380,6 +382,16 @@ void sprint( char *dst, char *fmt, ... );
 ** MISCELLANEOUS USEFUL SUPPORT FUNCTIONS
 **********************************************
 */
+
+/**
+** fake_exit()
+**
+** dummy "startup" function
+**
+** calls exit(%eax) - serves as the "return to" code for
+** main() functions, in case they don't call exit() themselves
+*/
+void fake_exit( void );
 
 /**
 ** cvt_dec(buf,value)

@@ -87,19 +87,20 @@ SOURCES = $(BOOT_SRC) $(FMK_SRCS) $(OS_SRCS) $(USR_SRCS)
 #
 # OS behavior:
 #	STATIC_STACKS		statically allocate all stack space
+#	USER_SHELL		have 'init' spawn the user-level shell
 #
 # Debugging options:
 #	RPT_INT_UNEXP		report any 'unexpected' interrupts
 #	RPT_INT_MYSTERY		report interrupt 0x27 specifically
 #	TRACE_CX		include context restore trace code
 #	TRACE=n			bitmask of internal tracing options
-#       SANITY=n                enable "sanity check" level 'n'
-#         0                     absolutely critical errors only
-#         1                     important consistency checking
-#         2                     less important consistency checking
-#         > 2                   currently unused
-#       CONSOLE_STATS		print statistics on console kbd input
-#       STATUS=n                dump queue & process info every 'n' seconds
+#	SANITY=n		enable "sanity check" level 'n'
+#	  0			absolutely critical errors only
+#	  1			important consistency checking
+#	  2			less important consistency checking
+#	  > 2			currently unused
+#	CONSOLE_STATS		print statistics on console kbd input
+#	SYSTEM_STATUS=n         dump queue & process info every 'n' seconds
 #
 # Define SANITY as 0 for minimal runtime checking (critical errors only).
 # If not defined, SANITY defaults to 9999.
@@ -284,3 +285,40 @@ depend:
 	makedepend $(INCLUDES) $(SOURCES)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+
+bootstrap.o: bootstrap.h
+startup.o: bootstrap.h
+isr_stubs.o: bootstrap.h
+cio.o: cio.h lib.h support.h x86arch.h x86pic.h
+libc.o: lib.h cio.h
+support.o: support.h lib.h cio.h x86arch.h x86pic.h bootstrap.h
+clock.o: x86arch.h x86pic.h x86pit.h common.h params.h kdefs.h cio.h
+clock.o: support.h lib.h clock.h queues.h kernel.h stacks.h kmem.h procs.h
+clock.o: sched.h sio.h compat.h syscalls.h
+kernel.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
+kernel.o: kmem.h procs.h x86arch.h queues.h users.h bootstrap.h clock.h
+kernel.o: sched.h sio.h compat.h syscalls.h
+kmem.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
+kmem.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h bootstrap.h
+procs.o: common.h params.h kdefs.h cio.h support.h lib.h procs.h stacks.h
+procs.o: kmem.h kernel.h x86arch.h
+queues.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
+queues.o: kmem.h procs.h x86arch.h queues.h
+sched.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
+sched.o: kmem.h procs.h x86arch.h sched.h queues.h
+sio.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
+sio.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h ./uart.h x86pic.h
+sio.o: sio.h
+stacks.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
+stacks.o: kmem.h procs.h x86arch.h
+syscalls.o: common.h params.h kdefs.h cio.h support.h lib.h x86arch.h
+syscalls.o: x86pic.h ./uart.h bootstrap.h syscalls.h queues.h sched.h procs.h
+syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h
+ulibc.o: common.h params.h kdefs.h cio.h support.h lib.h
+users.o: common.h params.h kdefs.h cio.h support.h lib.h users.h
+users.o: userland/main1.c ulib.h userland/main2.c userland/main3.c
+users.o: userland/userH.c userland/userZ.c userland/userI.c userland/userW.c
+users.o: userland/userJ.c userland/userY.c userland/main4.c userland/userX.c
+users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
+users.o: userland/userS.c userland/main6.c userland/init.c userland/idle.c
+ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h

@@ -120,7 +120,22 @@ enum datum_e {
 
 // other failures
 #define E_BAD_PARAM		(-2)
-#define	E_NO_CHILDREN	(-3)
+#define E_BAD_CHAN		(-3)
+#define	E_NO_CHILDREN	(-4)
+#define	E_NO_DATA		(-5)
+#define	E_NO_PROCS		(-6)
+#define	E_NOT_FOUND		(-7)
+
+// ----------------------------------------------------------
+// Predefined user process exit status values
+
+// normal exit status
+#define	EXIT_SUCCESS	0
+
+// error indicators
+#define	EXIT_FAILURE	(-1)
+#define	EXIT_ABORTED	(-2)
+#define	EXIT_KILLED		(-3)
 
 // ----------------------------------------------------------
 // PIDs are 16-bit unsigned ints

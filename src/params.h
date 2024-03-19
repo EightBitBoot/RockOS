@@ -37,25 +37,4 @@
 #define	CLOCK_FREQUENCY	1000
 #define	TICKS_PER_MS	1
 
-#ifndef SP_ASM_SRC
-
-/*
-** Start of C-only definitions
-*/
-
-/*
-** Types
-*/
-
-/*
-** Globals
-*/
-
-/*
-** Prototypes
-*/
-
-#endif
-// !SP_ASM_SRC
-
 #endif

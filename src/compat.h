@@ -105,7 +105,7 @@
 
 // invoke the queue creation function
 #define QCREATE(q)	do { \
-		_que_create( &QNAME, NULL ); \
+		_que_create( &(q), NULL ); \
 	} while(0)
 
 // invoke the queue "length" function

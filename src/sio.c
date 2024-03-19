@@ -289,7 +289,7 @@ void _sio_init( void ) {
 	_sending = 0;
 
 	// queue of read-blocked processes
-	QCREATE( _reading );
+	QCREATE( QNAME );
 
 	/*
 	** Next, initialize the UART.

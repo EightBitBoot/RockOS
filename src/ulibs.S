@@ -55,5 +55,20 @@ SYSCALL(exec)
 SYSCALL(bogus)
 
 /*
-** TODO any other assembly-language library functions
+** Other library functions
 */
+
+/**
+** fake_exit()
+**
+** Dummy "startup" function
+**
+** calls exit(FAKE_EXIT) - serves as the "return to" code for
+** main() functions, in case they don't call exit() themselves
+*/
+
+	.globl	fake_exit
+fake_exit:
+	// alternate: could push a "fake exit" status
+	pushl	%eax	// termination status returned by main()
+	call	exit	// terminate this process

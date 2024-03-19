@@ -103,8 +103,6 @@ isr_save:
 */
 	movl	52(%esp),%eax	// get vector number and error code
 	movl	56(%esp),%ebx
-	pushl	%ebx		// put them on the top of the stack ...
-	pushl	%eax		// ... as parameters for the ISR
 
 /********************
 ** MOD FOR 20235
@@ -136,6 +134,9 @@ isr_save:
 /********************
 ** END MOD FOR 20235
 ********************/
+
+	pushl	%ebx		// put them on the top of the stack ...
+	pushl	%eax		// ... as parameters for the ISR
 
 /*
 ** Call the ISR

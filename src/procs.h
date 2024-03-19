@@ -11,12 +11,6 @@
 
 #include "common.h"
 
-// this is here because stacks.h needs a pointer to a pcb_t
-
-typedef struct pcb_s pcb_t;
-
-#include "stacks.h"
-
 /*
 ** General (C and/or assembly) definitions
 */
@@ -90,6 +84,14 @@ typedef struct context_s {
 
 #define SZ_CONTEXT	sizeof(context_t)
 
+// Now we can include stacks.h (it needs to know what a
+// context_t is). It also needs to know what a pcb_t is,
+// so we'll add a forward type declaration for that.
+
+typedef struct pcb_s pcb_t;
+
+#include "stacks.h"
+
 /*
 ** the process control block
 **
@@ -139,6 +141,9 @@ extern pcb_t _processes[N_PROCS];
 // next available PID
 extern pid_t _next_pid;
 
+// pointer to the PCB for the 'init' process
+extern pcb_t *_init_pcb;
+
 /*
 ** Prototypes
 */
@@ -171,12 +176,43 @@ pcb_t *_pcb_alloc( void );
 */
 void _pcb_dealloc( pcb_t *pcb );
 
+/**
+** Name:	_pcb_find
+**
+** Locate a PCB by PID
+**
+** @param pid   The PID we want to locate
+**
+** @return A pointer to the desired PCB, or NULL
+*/
+pcb_t *_pcb_find( pid_t pid );
+
+/**
+** Name:	_pcb_cleanup
+**
+** Reclaim a process' data structures
+**
+** @param pcb   The PCB to reclaim
+*/
+void _pcb_cleanup( pcb_t *pcb );
+
+/**
+** Name:	_pcb_zombify
+**
+** Do the real work for exit() and some kill() calls
+**
+** Also called from the scheduler and the dispatcher.
+**
+** @param victim  Pointer to the PCB for the exiting process
+*/
+void _pcb_zombify( pcb_t *victim );
+
 /*
 ** Debugging/tracing routines
 */
 
 /**
-** _pcb_dump(msg,pcb)
+** Name:	_pcb_dump
 **
 ** Dumps the contents of this PCB to the console
 **
@@ -186,7 +222,7 @@ void _pcb_dealloc( pcb_t *pcb );
 void _pcb_dump( const char *msg, register pcb_t *p );
 
 /**
-** _ctx_dump(msg,context)
+** Name:	_ctx_dump
 **
 ** Dumps the contents of this process context to the console
 **
@@ -196,7 +232,7 @@ void _pcb_dump( const char *msg, register pcb_t *p );
 void _ctx_dump( const char *msg, register context_t *c );
 
 /**
-** _ctx_dump_all(msg)
+** Name:	_ctx_dump_all
 **
 ** dump the process context for all active processes
 **
@@ -205,7 +241,7 @@ void _ctx_dump( const char *msg, register context_t *c );
 void _ctx_dump_all( const char *msg );
 
 /**
-** _ptable_dump(msg,all)
+** Name:	_ptable_dump
 **
 ** dump the contents of the "active processes" table
 **

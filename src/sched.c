@@ -74,6 +74,12 @@ status_t _schedule( pcb_t *pcb )
 {
 	// sanity check?
 	assert1( pcb != NULL );
+
+	// if this process has been killed, zombify it
+	if( pcb->state == Killed ) {
+		_pcb_zombify( pcb );
+		return S_OK;
+	}
 	
 	// get the scheduling priority for this process
 	prio_t n = pcb->priority;
@@ -95,22 +101,35 @@ status_t _schedule( pcb_t *pcb )
 */
 void _dispatch( void )
 {
-	// find an available process to dispatch
-	int n = SysPrio;
-	while( n < N_PRIOS && QUE_IS_EMPTY(&_ready[n]) ) {
-		++n;
-	}
+	pcb_t *pcb = NULL;
 
-	// if we don't have one, we are in deep trouble!
-	assert( n < N_PRIOS );
+	do {
 
-	// found one; pull it off the queue, but blow up
-	// if that fails
-	void *data;
-	assert( _que_remove(&_ready[n],&data) == S_OK );
+		// find an available process to dispatch
+		int n = SysPrio;
+		while( n < N_PRIOS && QUE_IS_EMPTY(&_ready[n]) ) {
+			++n;
+		}
 
-	// make it the current process
-	_current = (pcb_t *) data;
+		// if we don't have one, we are in deep trouble!
+		assert( n < N_PRIOS );
+
+		// found one; pull it off the queue, but blow up
+		// if that fails
+		assert( _que_remove(&_ready[n],(void **)&pcb) == S_OK );
+
+		// if this process has been killed, zombify it
+		if( pcb->state == Killed ) {
+			// get rid of it
+			_pcb_zombify( pcb );
+			// keep looking
+			pcb = NULL;
+		}
+
+	} while( pcb == NULL );
+
+	// found one - make it the current process
+	_current = pcb;
 
 	// now a running process with the standard quantum
 	_current->state = Running;

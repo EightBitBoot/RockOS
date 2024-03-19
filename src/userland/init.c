@@ -52,14 +52,37 @@ typedef struct proc_s {
 #define PROCENT(e, p, s, ...) { e, p, s, { __VA_ARGS__ , NULL } }
 
 /*
-** We have two spawn tables. The first one contains all user-level
-** processes that may be spawned either by 'init' or 'shell'; the second
-** contains processes that will only be started by 'init' (e.g., the
-** idle process, and the shell if that is being used).
-**
-** The primary spawn table, used by 'init' and 'shell'.
+** We have two spawn tables. The first one contains user-level
+** processes that are started by 'init' but which are not available
+** to be started by 'shell', such as 'idle' and 'shell' itself.
+** These will started before the processes listed in the secondary
+** table (below).
 */
-static proc_t spawn_table[] = {
+static proc_t spawn_table_1[] = {
+
+	// the idle process; it runs at Deferred priority,
+	// so it will only be dispatched when there is
+	// nothing else available to be dispatched
+	PROCENT( idle, DeferredPrio, "!", "idle", "." ),
+
+#ifdef SPAWN_SHELL
+	// spawn a "test shell" process; it runs at System
+	// priority, so it takes precedence over all other
+	// user-level processes when it's not sleeping or
+	// waiting for input
+	PROCENT( shell, SysPrio, "@", "shell" ),
+#endif
+
+	// PROCENT( 0, 0, 0, 0 )
+	{ 0 }
+};
+
+/*
+** The secondary table contains process that may be spawned by 'init'
+** or by 'shell'. Some of these may also be spawned by other user
+** processes.
+*/
+static proc_t spawn_table_2[] = {
 
 	// Users A-C each run main1, which loops printing its character
 #ifdef SPAWN_A
@@ -131,9 +154,11 @@ static proc_t spawn_table[] = {
 	PROCENT( userQ, UserPrio, "Q", "userQ", "Q" ),
 #endif
 
-	// User R reads from the SIO one character at a time, forever
+	// User R reports its PID, PPID, and sequence number; it
+	// calls fork() but not exec(), with each child getting the
+	// next sequence number, to a total of five copies
 #ifdef SPAWN_R
-	PROCENT( userR, UserPrio, "R", "userR", "R", "10" ),
+	PROCENT( userR, UserPrio, "R", "userR", "R", "20", "1" ),
 #endif
 
 	// User S loops forever, sleeping 13 sec. on each iteration
@@ -156,31 +181,6 @@ static proc_t spawn_table[] = {
 #endif
 	
 	// a dummy entry to use as a sentinel
-	// PROCENT( 0, 0, 0, 0 )
-	{ 0 }
-};
-
-/*
-** The secondary table. These are processes started by 'init', but
-** not available to be started by other processes (such as by the
-** shell). Confusingly, these will be started before the processes
-** listed in the primary table (above).
-*/
-static proc_t spawn_table_2[] = {
-
-	// the idle process; it runs at Deferred priority,
-	// so it will only be dispatched when there is
-	// nothing else available to be dispatched
-	PROCENT( idle, DeferredPrio, "!", "idle", "." ),
-
-#ifdef SPAWN_SHELL
-	// spawn a "test shell" process; it runs at System
-	// priority, so it takes precedence over all other
-	// user-level processes when it's not sleeping or
-	// waiting for input
-	PROCENT( shell, SysPrio, "@", "shell" ),
-#endif
-
 	// PROCENT( 0, 0, 0, 0 )
 	{ 0 }
 };
@@ -278,8 +278,8 @@ USERMAIN( init )
 
 	cwrites( "INIT: starting user processes\n" );
 
+	process( ch, spawn_table_1 );
 	process( ch, spawn_table_2 );
-	process( ch, spawn_table );
 
 	swrites( " !!!\r\n\n" );
 
@@ -326,22 +326,24 @@ USERMAIN( init )
 */
 static int32_t run( char which )
 {
-    char buf[128];
-	proc_t *curr;
-	char c1 = which | 0x20;	// map to lowercase
+	char buf[128];
 
-	for( curr = spawn_table; curr->entry != 0; ++curr ) {
-		char ch = *(curr->select) | 0x20;
-		if( which == ch ) {
-			return spawn( curr->entry, curr->prio, &(curr->args) );
+	if( which >= 'a' && which <= 'z' ) {
+		which &= 0xdf;	// map to uppercase
+	}
+
+	register proc_t *curr;
+	for( curr = spawn_table_2; curr->entry != 0; ++curr ) {
+		if( which == *(curr->select) ) {
+			return spawn( curr->entry, curr->prio, curr->args );
 		}
 	}
 
-   sprint( buf, "+++ Shell: unknown cmd '%c'\n", which );
-   cwrites( buf );
+	sprint( buf, "+++ Shell: unknown cmd '%c'\n", which );
+	cwrites( buf );
 
-    // unlikely to be an actual error code
-    return( -90210 );
+	// unlikely to be an actual error code
+	return( -90210 );
 };
 
 
@@ -351,39 +353,36 @@ static int32_t run( char which )
 static void help( void )
 {
 
-    swrites( "\nAvailable commands:\n" );
-    swrites( " Spawn a process: " );
+	swrites( "\nAvailable commands:\n" );
+	swrites( " Spawn a process: " );
 
-	proc_t *curr = spawn_table;
+	proc_t *curr = spawn_table_2;
 	while( curr->entry != NULL ) {
 		swrites( curr->select );
 		++curr;
 	}
-    swrites( "\n Help:  ?\n Exit:	*\n" );
+	swrites( "\n Help:  ?\n Exit:	*\n" );
 
 }
 
 /**
 ** shell - extremely simple shell for spawning test programs
-**
-** Scheduled by _kshell() when the character 'u' is typed on
-** the console keyboard.
 */
 USERMAIN( shell )
 {
-    char buf[128];
-    char ch;
+	char buf[128];
+	char ch;
 
-    // keep the compiler happy
-    (void) arglen;
-    (void) args;
+	// keep the compiler happy
+	(void) argc;
+	(void) argv;
 
-    // report that we're up and running
-    cwrites( "+++ Shell is ready\n" );
-    swritech( '@' );
+	// report that we're up and running
+	cwrites( "+++ Shell is ready\n" );
+	swritech( '@' );
 
-    // loop forever
-    for(;;) {
+	// loop forever
+	for(;;) {
 
 	   // prompt for the next command
 	   swrites( "\n@ " );
@@ -425,7 +424,7 @@ USERMAIN( shell )
 
 			 // wait for the process to terminate
 			 int32_t status;
-			 whom = waitpid( pid, &status );
+			 int32_t whom = waitpid( pid, &status );
 
 			 // figure out the result
 			 if( whom != pid ) {
@@ -440,10 +439,13 @@ USERMAIN( shell )
 
 	   }
 
-    }
+	}
 
-    cwrites( "+++ Shell exiting\n" );
-    exit( 0 );
+	cwrites( "+++ Shell exiting\n" );
+	exit( 0 );
+
+	// keep the compiler happy
+	return( 42 );
 }
 
 #endif

@@ -98,7 +98,7 @@
 ** userJ    X     .     .     X     .     .     X     .     X     X     .
 ** userP    X     X     .     X     .     X     .     .     .     .     .
 ** userQ    X     .     .     X     .     .     .     .     .     .     X
-** userR    X     X     X     X     .     .     .     .     .     .     .
+** userR    X     X     .     X     .     X     .     .     X     .     .
 ** userS    X     X     .     X     .     .     .     .     .     .     .
 ** userW    X     X     .     X     .     X     .     .     .     .     .
 ** userX    X     .     .     X     .     X     .     .     .     .     .
@@ -119,6 +119,11 @@
 ** of ?.
 */
 
+#ifdef USER_SHELL
+#define	SPAWN_SHELL
+#endif
+
+// uncomment these to spawn the various user processes directly
 #define SPAWN_A
 #define SPAWN_B
 #define SPAWN_C

@@ -8,7 +8,7 @@
 ** User function Z:	 exit, sleep, write
 **
 ** Prints its ID, then records PID and PPID, loops printing its ID,
-** and finally re-gets PPID for comparison.	 Yields after every second
+** and finally re-gets PPID for comparison.  Yields after every second
 ** ID print in the loop.
 **
 ** This code is used as a handy "spawn me" test routine; it is spawned

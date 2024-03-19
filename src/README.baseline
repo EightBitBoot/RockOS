@@ -1,0 +1,238 @@
+This file describes some of the things that may be less obvious about how
+the baseline OS is organized and operates.  Changes that were made to the
+framework and its support functions are described in the "README.mods" file.
+
+The baseline is designed to run in protected ("IA32") mode.  This means
+that the sizes of 'int', 'long int', and pointer values are all 32 bits.
+The code relies on this in many, many places, both in terms of data
+structure declarations (e.g., the PCB is 32 bytes long) and things like
+parameter passing and return value mechanisms.  If the system is modified
+to run in "long mode", LOTS of things will have to change.
+
+Utility Programs
+================
+
+The Offsets.c source file contains a program which will print out the
+sizes of all the important system types in the baseline system, along
+with byte offsets to each field in several important data types (pcb_t,
+context_t, qnode_t, and queue_t).  If run as "./Offsets -h", it will
+create a file named "offsets.h" with CPP macro definitions for each of
+these values; this is suitable for including into assembly source files
+to make the sizes and field offsets available to assembly code. See the
+"isr_stubs.S" file for examples.
+
+The Makefile is set up to automatically compile and run this program when
+any of the important data structure header files have changed.
+
+Modules
+=======
+
+General Info
+-------------
+
+Each module typically has a header file which defines generally-visible
+data types and declarations associated with that module.
+
+The header file "params.h" contains declarations for some of the basic
+system parameters that are most likely to be changed (maximum number of
+processes, etc.).
+
+The header file "common.h" contains declarations that should be visible
+both to the OS and to user-level code. It automatically includes one of
+two additional headers: "kdefs.h" contains kernel-specific declarations,
+and "udefs.h" contains user-level declarations. These headers, in turn,
+pull in the library headers "lib.h" and "ulib.h" which declare kernel
+library functions and user library functions, respectively.
+
+Procs
+-----
+
+The 'procs' module defines the following globally-visible data types:
+
+	pcb_t		the PCB structure
+	context_t	layout of the context save area on the stack
+	state_t		process state
+
+Process states are defined in an enumerated type, and are (roughly)
+grouped into three clusters based on the internal state values; the
+clusters indicate general process status, as follows (state values appear
+in parentheses here):
+
+	pre-viable (0, 1):	Unused, New
+	active (2-6):		Ready, Running, Sleeping, Blocked, Waiting
+	inactive (7, 8):	Killed, Zombie
+
+States with values < 'Ready' are pre-viable; those with values > 'Waiting'
+are inactive.  The symbol N_STATES is automatically defined with a value
+equal to the number of states declared in the enum (9, in the list above),
+and can be used to dimension arrays or control loops that iterate through
+all states.
+
+Similarly, process priorities are defined in an enum.  They define the
+the levels in the MLQ scheduling structure:
+
+	SysPrio (0), UserPrio (1), DeferredPrio (2)
+
+The symbol N_PRIOS is automatically defined as the number of priority
+values (3, in this case). Priorities are defined in the common.h header
+file, as they need to be visible at the user level.
+
+Critical process variables defined in this module:
+
+	_next_pid	the next available PID
+	_processes	the table of active processes
+	_init_pcb	pointer to the PCB for the 'init' process
+
+The active table is dimensioned with the symbol N_PROCS, defined in
+"param.h" as the maximum number of simultaneous user processes the
+system will hold.
+
+The only user process started by the kernel is 'init', PID #1. This
+process starts all the other user-level processes.
+
+Sched
+-----
+
+The scheduler uses a MLQ organization with three levels corresponding
+to the three process priorities (SysPrio, UserPrio, DeferredPrio). The
+_schedule() function takes a PCB and inserts it into the appropriate
+queue; the _dispatch() function removes the first process from the
+highest-priority ready queue that isn't empty and makes it the current
+process.
+
+This module defines the ready queue as an array of queue_t dimensioned by
+N_PRIOS (the number of process priority values).
+
+Both _schedule() and _dispatch() check the state of the processes they
+work with to detect processes which have been killed. A killed process
+will be "zombified" - if its parent is waiting for it, the parent
+received the exit status of the process and the process is cleaned up.
+Otherwise, the process becomes a zombie, where it remains until its
+parent collects its exit status.
+
+Queues
+------
+
+The queue_t data structure is visible to the OS at large.  The following
+queues are defined in the baseline system:
+
+	_sleep		sleeping processes; defined in 'syscalls'
+	_ready		ready-to-execute processes; defined in 'sched'
+	_sio_read	processes blocked on SIO input; defined in 'sio'
+
+Notably, processes in the Zombie state are not actually placed on queues;
+instead, the process table is searched when these need to be located.  This
+reduces overhead a bit.
+
+Queues are self-ordering.  When created, a Queue can have an "ordering"
+function associated with it; this is used to determine the ordering
+relationship between two entries in the Queue when ordered insertion is
+desired.  If this is not specified, the Queue is treated as a FIFO list.
+
+Clock
+-----
+
+The system clock (PIT timer #0) ticks at 1000Hz.  The clock ISR is
+responsible for running the "pinwheel" in the upper-left corner of the
+console monitor, for handling quantum expiration, and for waking up
+sleeping processes whose wakeup times have arrived.
+
+Syscalls
+--------
+
+The baseline system supports these calls: exit, sleep, read, write,
+waitpid, getdata, setdata, kill, fork, and exec.
+
+There is an additional "bogus" system call code defined to allow testing
+of the syscall ISR, to make sure it handles 'bad' system call codes
+properly.
+
+System calls are implemented using the standard 32-bit ABI:  parameters
+are pushed onto the stack in reverse order as longwords; a code
+indicating which syscall is being made is placed into %eax; and an 'int'
+instruction is executed to cause the syscall interrupt.
+
+Adding a system call requires the following actions:
+
+	* add its code (SYS_name) in syscalls.h, remembering to update
+	  the N_SYSCALLS macro
+
+	* add its implementation (_sys_name()) to syscalls.c
+
+	* add code to initialize its entry in the syscall table to the
+	  _syscalls table in syscalls.c
+
+	* add a line to the ulibs.S file to defined the syscall library
+	  stub function:
+
+		SYSCALL(name)
+
+	* add a prototype to the ulib.h header file - e.g., for a
+	  syscall that takes no parameters and returns no result:
+
+		void name( void );
+
+Added Functionality
+-------------------
+
+Several features beyond the ones discussed or created in class were
+added to simplify some aspects of managing the system.  Here is a brief
+description of them.
+
+   kernel.c, kernel.h: support functions
+	_kpanic() is a frontend to the framework's __panic() function;
+	it prints a header, dumps some information to the console, and
+	then calls __panic()
+
+	_kshell() is a "kernel shell" function.  It is registered as
+	a callback routine when CIO is initialized; whenever a key is
+	pressed on the console keyboard, it is passed to the _kshell()
+	function, which will interpret it. It is primarily intended for
+	generating debugging output while the OS is running.
+
+   processes.c, processes.h: support functions
+	_pcb_zombify() does the actual work required for processes to
+	exit or to be killed
+
+	_pcb_cleanup() performs the final cleanup of PCB and stack for
+	a process that has terminated
+
+   	_pcb_dump() prints the contents of a PCB to the console
+
+	_ctx_dump() prints the contents of a context_t to the console
+
+	_ctx_dump_all() dumps the context_t for all active processes
+
+	_ptable_dump() dumps the contents of the active process table
+
+   stacks.c, stacks.h
+	_stk_setup() handles setting up a stack for a new process;
+	this involves creating the argc and argv parameters, faking a
+	call to the main() function for the process, and setting up
+	a context save area on the stack so that the process can be
+	"restored" after an interrupt that causes a context switch
+
+   	_stk_dump() dumps all or a portion of the supplied stack_t to
+	the console
+
+Userland
+--------
+
+A number of user processes are defined in addition to the init() and
+idle() processes.  See users.h for a matrix showing which user functions
+test what aspects of the baseline OS.  Individual user processes are
+configured to run by definining their "SPAWN_name" symbols in users.h;
+e.g., define SPAWN_A to configure the system to spawn userA().
+
+In addition to these user processes, a user shell is available.  It is
+spawned by init() if the USER_SHELL macro is defined in the Makefile,
+running at System priority.  When dispatched, the shell loops reading
+single characters from the SIO (*not* the console) and spawning user
+test programs.  When it reads the character '*', it will exit.
+
+The users.h header also contains a matrix illustrating the set of system
+calls made by each user-level program (init, idle, shell, etc.). This
+information can be used to determine which user programs to start for
+testing purposes (e.g., for testing a specific system call, you can
+comment out the SPAWN_x declarations for programs that don't use that
+particular system call).

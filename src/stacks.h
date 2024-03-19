@@ -84,18 +84,29 @@ void _stk_init( void );
 **
 ** Allocate a stack.
 **
-** @param pcb   Pointer to the PCB that will "own" this stack
-**
 ** @return pointer to a "clean" stack, or NULL
 */
-stack_t *_stk_alloc( pcb_t *pcb );
+stack_t *_stk_alloc( void );
 
 /**
 ** _stk_dealloc() - deallocate a stack
 **
 ** @param stk   The stack to be returned to the free list
 */
-void _stk_dealloc( uint32_t *stk );
+void _stk_dealloc( stack_t *stk );
+
+/**
+** _stk_setup(stk,entry,args)
+**
+** Sets up the stack for a new process.
+**
+** @param stk    - The stack to be set up
+** @param entry  - Entry point for the new process
+** @param args   - Argument vector to be put in place
+**
+** @return A pointer to the context_t on the stack, or NULL
+*/
+context_t *_stk_setup( stack_t *stk, uint32_t entry, char *args[] );
 
 /**
 ** _stk_dump(msg,stk,lim)

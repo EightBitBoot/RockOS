@@ -126,8 +126,8 @@ static void _kreport( bool_t dtrace ) {
 	__cio_printf( " STATUS = %d", STATUS );
 #endif
 
-#ifdef TRACE
-	__cio_printf( " TRACE = 0x%03x\n", TRACE );
+#if TRACE > 0
+	__cio_printf( " TRACE = 0x%04x\n", TRACE );
 
 	// decode the trace settings if that was requested
 	if( TRACING_SOMETHING && dtrace ) {
@@ -379,11 +379,37 @@ void _kinit( void ) {
 	/*
 	** Create the initial user process
 	** 
-	** This code is largely stolen from the spawn() implementation
-	** in syscalls.c; if that changes, this must also change.
+	** This code is largely stolen from the fork() and exec()
+	** implementations in syscalls.c; if those change, this must
+	** also change.
 	*/
 
-	// TODO
+    // allocate the necessary data structures
+    pcb_t *pcb = _pcb_alloc();
+    assert( pcb != NULL );
+
+    pcb->stack = _stk_alloc();
+    assert( pcb->stack != NULL );
+
+    // fill in the PCB
+    pcb->pid = pcb->ppid = PID_INIT;
+    pcb->state = New;
+    pcb->priority = SysPrio;
+
+    // process context area and initial stack contents
+	char *args[] = { "init", "+", NULL };
+    context_t *ctx = _stk_setup( pcb->stack, (uint32_t) init, args );
+    assert( ctx != NULL );
+
+    // remember where the context area is
+    pcb->context = ctx;
+
+	// remember which PCB is 'init'
+	_init_pcb = pcb;
+
+    // schedule and dispatch it
+    assert( _schedule(pcb) == S_OK );
+    _dispatch();
 
 	/*
 	** END OF TERM-SPECIFIC CODE

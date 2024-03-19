@@ -5,24 +5,29 @@
 #include "ulib.h"
 
 /**
-** User function R:   exit, sleep, read, write
+** User function R:   exit, sleep, write, fork, getdata
 **
-** Reports itself, then loops forever reading and printing SIO characters
+** Reports itself and its sequence number, along with its PID and
+** its parent's PID. It then delays, forks, delays, reports again,
+** and exits.
 **
-** Invoked as:  userR  x  [ s ]
+** Invoked as:  userR  x  n  [ s ]
 **	 where x is the ID character
+**		   n is the sequence number of the initial incarnation
 **		   s is the initial delay time (defaults to 10)
 */
 
 USERMAIN( userR ) {
-	char ch = 'r';	  // default character to print
-	int count = 10;	  // initial delay count
+	char ch = 'r';	// default character to print
+	int delay = 10;	// initial delay count
+	int seq = 99;	// my sequence number
 	char buf[128];
-	char b2[8] = "r[?]";	// will replace 'r', '?' below
 
 	// process the command-line arguments
 	switch( argc ) {
-	case 3:	count = str2int( argv[2], 10 );
+	case 4:	delay = str2int( argv[3], 10 );
+			// FALL THROUGH
+	case 3:	seq = str2int( argv[2], 10 );
 			// FALL THROUGH
 	case 2:	ch = argv[1][0];
 			break;
@@ -36,30 +41,62 @@ USERMAIN( userR ) {
 			cwrites( "\n" );
 	}
 
+	/*
+	** C oddity: a label cannot immediately precede a declaration.
+	**
+	** Declarations are not considered "statements" in C. Prior to
+	** C99, all declarations had to precede any statements inside a
+	** block. Labels can only appear before statements.  C99 allowed
+	** the mixing of declarations and statements, but did not relax
+	** the requirement that labels precede only statements.
+	**
+	** That's why the declarations of these variables occur before the
+	** label, but their initializations occur after the label.
+	**
+	** As the PSA says on TV, "The more you know..." :-)
+	*/
+
+	int32_t pid;
+	int32_t ppid;
+
+ restart:
+
 	// announce our presence
-	b2[0] = ch;
+	pid = getdata( Pid );
+	ppid = getdata( PPid );
 
-	write( CHAN_SIO, b2, 1 );
+	sprint( buf, " %c[%d,%d,%d]", ch, seq, pid, ppid );
+	swrites( buf );
 
-	sleep( SEC_TO_MS(count) );
+	sleep( SEC_TO_MS(delay) );
 
-	for(;;) {
-		int n = read( CHAN_SIO, &b2[2], 1 );
-		if( n != 1 ) {
-			sprint( buf, "!! %c, read returned %d\n", ch, n );
+	// create the next child in sequence
+	if( seq < 5 ) {
+		++seq;
+		int32_t n = fork();
+		switch( n ) {
+		case -1:
+			// failure?
+			sprint( buf, "** R[%d] fork code %d\n", pid, n );
 			cwrites( buf );
-			if( n == -1 ) {
-				// wait a bit
-				sleep( SEC_TO_MS(1) );
-			}
-		} else {
-			write( CHAN_SIO, b2, 4 );
+			break;
+		case 0:
+			// child
+			goto restart;
+		default:
+			// parent
+			--seq;
+			sleep( SEC_TO_MS(delay) );
 		}
 	}
 
-	sprint( buf, "!! %c left its infinite loop?!?!?!?\n", ch );
-	cwrites( buf );
-	exit( 1 );
+	// final report - PPID may change, but PID and seq shouldn't
+	pid = getdata( Pid );
+	ppid = getdata( PPid );
+	sprint( buf, " %c[%d,%d,%d]", ch, seq, pid, ppid );
+	swrites( buf );
+
+	exit( 0 );
 
 	return( 42 );  // shut the compiler up!
 

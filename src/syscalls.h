@@ -62,9 +62,6 @@
 ** Globals
 */
 
-// the sleep queue
-extern queue_t _sleeping;
-
 /*
 ** Prototypes
 */
