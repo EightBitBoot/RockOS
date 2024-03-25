@@ -17,6 +17,7 @@
 
 #include "bootstrap.h"
 #include "cio.h"
+#include "acpi.h"
 #include "clock.h"
 #include "kmem.h"
 #include "sched.h"
@@ -346,6 +347,8 @@ void _kinit( void ) {
 #endif
 
 	// other module initialization calls here
+	_acpi_init();
+
 	_clk_init();
 	_pcb_init();
 #if TRACING_PCB

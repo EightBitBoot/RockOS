@@ -15,15 +15,16 @@
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   syscalls.c vgatext.c
+	   syscalls.c vgatext.c acpi.c
 OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o vgatext.o
+	   syscalls.o vgatext.o acpi.o
 
 OS_S_SRC =
 OS_S_OBJ =
 
 OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
-	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h vgatext.h
+	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h \
+	   vgatext.h acpi.h
 
 OS_LIBS =
 
