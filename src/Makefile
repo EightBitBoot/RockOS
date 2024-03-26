@@ -197,7 +197,7 @@ LDFLAGS = -melf_i386 -no-pie
 	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
 
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c
+	$(CC) $(CFLAGS) -c $*.c -o $*.o
 
 .c.i:
 	$(CC) -E $(CFLAGS) -c $*.c > $*.i
