@@ -17,7 +17,7 @@
 
 #include "bootstrap.h"
 #include "cio.h"
-#include "acpi.h"
+#include "acpi/acpi.h"
 #include "clock.h"
 #include "kmem.h"
 #include "sched.h"

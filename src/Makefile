@@ -15,16 +15,16 @@
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   syscalls.c vgatext.c acpi.c
+	   syscalls.c vgatext.c acpi/acpi.c acpi/tables/rsdp.c
 OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o vgatext.o acpi.o
+	   syscalls.o vgatext.o acpi/acpi.o acpi/tables/rsdp.o
 
 OS_S_SRC =
 OS_S_OBJ =
 
 OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
 	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h \
-	   vgatext.h acpi.h
+	   vgatext.h acpi/acpi.h
 
 OS_LIBS =
 
@@ -289,20 +289,25 @@ depend:
 
 bootstrap.o: bootstrap.h
 startup.o: bootstrap.h
+<<<<<<< HEAD
 isr_stubs.o: bootstrap.h
 cio.o: cio.h lib.h support.h x86arch.h x86pic.h vgatext.h
+=======
+isr_stubs.o: bootstrap.h offsets.h
+cio.o: cio.h lib.h support.h x86arch.h x86pic.h
+>>>>>>> 848172c ([acpi] Refactor into subdirectory)
 libc.o: lib.h cio.h
 support.o: support.h lib.h cio.h x86arch.h x86pic.h bootstrap.h
-clock.o: x86arch.h x86pic.h x86pit.h common.h params.h kdefs.h cio.h
-clock.o: support.h lib.h clock.h queues.h kernel.h stacks.h kmem.h procs.h
-clock.o: sched.h sio.h compat.h syscalls.h
+clock.o: common.h params.h kdefs.h cio.h support.h lib.h clock.h queues.h
+clock.o: procs.h stacks.h kmem.h sched.h sio.h compat.h kernel.h x86arch.h
+clock.o: syscalls.h x86pic.h x86pit.h
 kernel.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-kernel.o: kmem.h procs.h x86arch.h queues.h users.h bootstrap.h clock.h
-kernel.o: sched.h sio.h compat.h syscalls.h
+kernel.o: kmem.h procs.h x86arch.h queues.h users.h bootstrap.h acpi/acpi.h
+kernel.o: clock.h sched.h sio.h compat.h syscalls.h
 kmem.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
 kmem.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h bootstrap.h
 procs.o: common.h params.h kdefs.h cio.h support.h lib.h procs.h stacks.h
-procs.o: kmem.h kernel.h x86arch.h
+procs.o: kmem.h kernel.h x86arch.h sched.h queues.h
 queues.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
 queues.o: kmem.h procs.h x86arch.h queues.h
 sched.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
@@ -311,11 +316,16 @@ sio.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
 sio.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h ./uart.h x86pic.h
 sio.o: sio.h
 stacks.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-stacks.o: kmem.h procs.h x86arch.h
+stacks.o: kmem.h procs.h x86arch.h bootstrap.h
 syscalls.o: common.h params.h kdefs.h cio.h support.h lib.h x86arch.h
 syscalls.o: x86pic.h ./uart.h bootstrap.h syscalls.h queues.h sched.h procs.h
 syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h
+<<<<<<< HEAD
 syscalls.o: vgatext.h
+=======
+acpi/acpi.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h lib.h
+acpi/acpi.o: debug.h
+>>>>>>> 848172c ([acpi] Refactor into subdirectory)
 ulibc.o: common.h params.h kdefs.h cio.h support.h lib.h
 users.o: common.h params.h kdefs.h cio.h support.h lib.h users.h
 users.o: userland/main1.c ulib.h userland/main2.c userland/main3.c

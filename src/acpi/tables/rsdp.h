@@ -1,7 +1,5 @@
-#ifndef ACPI_H_
-#define ACPI_H_
-
-#include "common.h"
+#ifndef ACPI_RSDP_H_
+#define ACPI_RSDP_H_
 
 #define ACPI_RSDP_SIGNATURE "RSD PTR "
 /**
@@ -24,25 +22,6 @@ struct acpi_rsdp {
 	uint8_t reserved[3];
 } __attribute__((packed));
 
-/**
- * @struct acpi_sdt_header
- * @brief ACPI System Description Table Header
- * @sa ACPI Specification (v6.5) Section 5.2.6
- */
-struct acpi_sdt_header {
-	char signature[4];
-	uint32_t length;
-	uint8_t revision;
-	uint8_t checksum;
-
-	char oem_id[6];
-	char oem_table_id[8];
-	uint32_t oem_revision;
-
-	uint32_t creator_id;
-	uint32_t creator_revision;
-} __attribute__((packed));
-
-void _acpi_init(void);
+struct acpi_rsdp* _acpi_get_rsdp_ptr(void);
 
 #endif

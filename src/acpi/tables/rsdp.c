@@ -1,13 +1,6 @@
-#include "acpi.h"
+#include <acpi/acpi.h>
+#include <acpi/tables/rsdp.h>
 #include "debug.h"
-#include "cio.h"
-
-struct acpi_data {
-	struct acpi_rsdp* rsdp;
-
-	// TODO: how to load and store AML coded tables dynamically?
-};
-static struct acpi_data _acpi_data = {0};
 
 static void* _acpi_get_ebda_ptr(void) {
 	uint16_t *ptr = (uint16_t *) 0x40E;
@@ -89,24 +82,12 @@ static bool_t _acpi_check_rsdp_valid(struct acpi_rsdp* rsdp) {
 	return true;
 }
 
-void _acpi_init( void ) {
-	__cio_printf("[acpi] initialize\n");
+struct acpi_rsdp* _acpi_get_rsdp_ptr(void) {
+	struct acpi_rsdp* ret = _acpi_find_rsdp_ptr();
 
-	// Find and ensure RSDP table is valid
-	_acpi_data.rsdp = _acpi_find_rsdp_ptr();
-	__cio_printf("[acpi] RSDP at 0x%x\n", _acpi_data.rsdp);
-
-	if (!_acpi_check_rsdp_valid(_acpi_data.rsdp)) {
-		_acpi_data.rsdp = NULL;
-		return;
+	if (_acpi_check_rsdp_valid(ret)) {
+		return ret;
+	} else {
+		return NULL;
 	}
-	__cio_printf("[acpi] RSDP valid\n");
-
-	// TODO: FADT, DSDT
-
-	// TODO: ACPI enable (section 16.3.1)
-
-	// TODO: syscalls for changing sleep state (shutdown/reboot/reset/sleep/etc.)
-
-	__cio_printf("[acpi] initialize complete\n");
 }
