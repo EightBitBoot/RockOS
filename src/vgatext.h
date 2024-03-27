@@ -28,8 +28,8 @@
 static unsigned int    active_color; // The color to be masked onto the character - as such, the lower 8 bits should be 0 and the upper 8 should store the VGA color data
 
 // Utility Functions
-int vga_text_fg (int c);
-int vga_text_bg (int c);
+unsigned int vga_text_fg (unsigned int c);
+unsigned int vga_text_bg (unsigned int c);
 static char* parse_ansi_color_code(char *buf, int *result_color);
 unsigned int ansi_color_to_vga_color(unsigned int ansi_color);
 // System Calls

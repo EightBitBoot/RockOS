@@ -1,4 +1,5 @@
 #include "vgatext.h"
+#include "cio.h"
 
 unsigned int vga_text_fg (unsigned int c) {
     return (c & 0x0F) << 8; //Ensure color is free of extra bits, bitshift to foreground
@@ -229,5 +230,74 @@ void __vga_text_set_active_color( unsigned int vga_text_color ) {
 }
 
 void __vga_text_init( void ) {
+    // Print Color Tests: Foreground Color
+    active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
+    __cio_printf("[VGA_T] init: default text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_BLACK);
+    __cio_printf("[VGA_T] init: black text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_BLUE);
+    __cio_printf("[VGA_T] init: blue text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_GREEN);
+    __cio_printf("[VGA_T] init: green text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_CYAN);
+    __cio_printf("[VGA_T] init: cyan text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_RED);
+    __cio_printf("[VGA_T] init: red text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_MAGENTA);
+    __cio_printf("[VGA_T] init: magenta text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_BROWN);
+    __cio_printf("[VGA_T] init: brown text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_GRAY);
+    __cio_printf("[VGA_T] init: gray text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_DARK_GRAY);
+    __cio_printf("[VGA_T] init: dark gray text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_LIGHT_BLUE);
+    __cio_printf("[VGA_T] init: light blue text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_LIGHT_GREEN);
+    __cio_printf("[VGA_T] init: light green text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_LIGHT_CYAN);
+    __cio_printf("[VGA_T] init: light cyan text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_LIGHT_RED);
+    __cio_printf("[VGA_T] init: light red text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_LIGHT_MAGENTA);
+    __cio_printf("[VGA_T] init: light magenta text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_YELLOW);
+    __cio_printf("[VGA_T] init: yellow text\n");
+    active_color = vga_text_fg(VGA_TEXT_COLOR_L_WHITE);
+    __cio_printf("[VGA_T] init: white text\n");
+    // Print Color Tests: Background Color
+    active_color = vga_text_bg(VGA_TEXT_COLOR_BLACK);
+    __cio_printf("[VGA_T] init: black background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_BLUE);
+    __cio_printf("[VGA_T] init: blue background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_GREEN);
+    __cio_printf("[VGA_T] init: green background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_CYAN);
+    __cio_printf("[VGA_T] init: cyan background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_RED);
+    __cio_printf("[VGA_T] init: red background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_MAGENTA);
+    __cio_printf("[VGA_T] init: magenta background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_BROWN);
+    __cio_printf("[VGA_T] init: brown background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_GRAY);
+    __cio_printf("[VGA_T] init: gray background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_DARK_GRAY);
+    __cio_printf("[VGA_T] init: dark gray background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_LIGHT_BLUE);
+    __cio_printf("[VGA_T] init: light blue background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_LIGHT_GREEN);
+    __cio_printf("[VGA_T] init: light green background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_LIGHT_CYAN);
+    __cio_printf("[VGA_T] init: light cyan background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_LIGHT_RED);
+    __cio_printf("[VGA_T] init: light red background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_LIGHT_MAGENTA);
+    __cio_printf("[VGA_T] init: light magenta background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_YELLOW);
+    __cio_printf("[VGA_T] init: yellow background\n");
+    active_color = vga_text_bg(VGA_TEXT_COLOR_L_WHITE);
+    __cio_printf("[VGA_T] init: white background\n");
+    // Reset to Default Color Byte to finish Initialization
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
