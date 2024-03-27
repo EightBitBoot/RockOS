@@ -28,6 +28,7 @@
 #include "support.h"
 #include "x86arch.h"
 #include "x86pic.h"
+#include "vgatext.h"
 
 /*
 ** Miscellaneous useful things
@@ -186,7 +187,7 @@ void __cio_putchar( unsigned int c ) {
         break;
 
     default:
-        __c_putchar_at( curr_x, curr_y, c );
+        __c_putchar_at( curr_x, curr_y, c | active_color );
         curr_x += 1;
         if( curr_x > scroll_max_x ) {
             curr_x = scroll_min_x;
@@ -711,6 +712,11 @@ void __cio_init( void (*fcn)(int) ) {
     ** Notification function (or NULL)
     */
     __c_notify = fcn;
+
+    /*
+    ** Default Text Color
+    */
+    __vga_text_init();
 
     /*
     ** Set up the interrupt handler for the keyboard

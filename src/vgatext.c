@@ -1,0 +1,233 @@
+#include "vgatext.h"
+
+unsigned int vga_text_fg (unsigned int c) {
+    return (c & 0x0F) << 8; //Ensure color is free of extra bits, bitshift to foreground
+}
+
+unsigned int vga_text_bg (unsigned int c) {
+    return vga_text_fg(c) << 4; //Ensure color is free of extra bits and in the foreground, bitshift to background
+}
+
+unsigned int ansi_color_to_vga_color(unsigned int ansi_color) {
+    /*
+    ** Convert an ANSI FGCOLOR to a VGA Color
+    ** 0 is not a supported input, as it is ambiguous
+    */
+    unsigned int color_modifier = ansi_color/10;
+    unsigned int base_color = ansi_color%10;
+    unsigned int vga_color;
+    switch(base_color) {
+        case 0:
+            vga_color = VGA_TEXT_COLOR_BLACK;
+            break;
+        case 1:
+            vga_color = VGA_TEXT_COLOR_RED;
+            break;
+        case 2:
+            vga_color = VGA_TEXT_COLOR_GREEN;
+            break;
+        case 3:
+            vga_color = VGA_TEXT_COLOR_BROWN;
+            break;
+        case 4:
+            vga_color = VGA_TEXT_COLOR_BLUE;
+            break;
+        case 5:
+            vga_color = VGA_TEXT_COLOR_MAGENTA;
+            break;
+        case 6:
+            vga_color = VGA_TEXT_COLOR_CYAN;
+            break;
+        default:
+            vga_color = VGA_TEXT_COLOR_GRAY;
+            break;
+    }
+
+    switch(color_modifier) {
+        case 3:
+            return vga_text_fg(vga_color);
+        case 9:
+            return vga_text_fg(vga_color+VGA_TEXT_COLOR_BRIGHTEN);
+        case 4:
+            return vga_text_bg(vga_color);
+        case 10:
+            return vga_text_bg(vga_color+VGA_TEXT_COLOR_BRIGHTEN);
+        default:
+            __cio_printf("__ansi_color_to_vga_color received invalid ANSI color: %d", ansi_color);
+    }
+}
+
+static char* parse_ansi_color_code(char *buf, int *result_color) {
+    /*
+    ** See https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#colors--graphics-mode
+    ** Supported formats:
+    ** \x1b[MODEmTEXT - applies MODE
+    ** \x1b[MODE;FGCOLORmTEXT - applies MODE, then FGCOLOR
+    ** \x1b[MODE;FGCOLOR;BGCOLORmTEXT - applies MODE, then FGCOLOR and BGCOLOR
+    ** Supported values for MODE:
+    ** - 0 (reset all modes (styles and colors))
+    ** Supported values for FGCOLOR:
+    ** - 0 (reset - equivalent to 37)
+    ** - 30 (black)
+    ** - 31 (red)
+    ** - 32 (green)
+    ** - 33 (brown)
+    ** - 34 (blue)
+    ** - 35 (magenta)
+    ** - 36 (cyan)
+    ** - 37 (light gray)
+    ** - 90 (dark gray)
+    ** - 91 (light red)
+    ** - 92 (light green)
+    ** - 93 (yellow)
+    ** - 94 (light blue)
+    ** - 95 (light magenta)
+    ** - 96 (light cyan)
+    ** - 97 (white)
+    ** Supported values for BGCOLOR:
+    ** - 0 (reset - equivalent to 47)
+    ** - 40 (black)
+    ** - 41 (red)
+    ** - 42 (green)
+    ** - 43 (brown)
+    ** - 44 (blue)
+    ** - 45 (magenta)
+    ** - 46 (cyan)
+    ** - 47 (light gray)
+    ** - 100 (dark gray)
+    ** - 101 (light red)
+    ** - 102 (light green)
+    ** - 103 (yellow)
+    ** - 104 (light blue)
+    ** - 105 (light magenta)
+    ** - 106 (light cyan)
+    ** - 107 (white)
+    **
+    ** Takes in input pointer, returns pointer to end sentinel character (or NULL if invalid code)
+    */
+    int ch;
+    unsigned int mode, fgcolor, bgcolor;
+    int *start_ap = *buf;
+    
+    // [ Sentinel
+    ch = *buf++;
+    if (ch != '[')
+        return 0; // end early if [ sentinel not present
+   
+    // MODE
+    ch = *buf++;
+    if (ch != '0') // our ANSI escape sequence implementation currently only supports resetting all modes each call
+        return 0; // end early if not valid mode
+    
+    // ; or m Sentinel
+    ch = *buf++;
+    if (ch == 'm') {
+        *result_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
+        return *buf; // m sentinel is end of escape sequence, return
+    } else if (ch == ';') {
+        ch = *buf++; // ; sentinel means there's at least an FGCOLOR, get next char
+    } else {
+        return 0; // end early if m or ; sentinel not present
+    }
+    
+    // FGCOLOR
+    if (ch == '0') {
+        fgcolor = 37;
+    } else if (ch == '3') {
+        fgcolor = 30;
+    } else if (ch == '9') {
+        fgcolor = 90;
+    } else {
+        return 0; // end early if invalid FGCOLOR starting character
+    }
+    ch = *buf++;
+    if (fgcolor > 0) { // we have another digit to process
+        switch(ch) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+                fgcolor += ch - '0';
+                break;
+            default:
+                return 0; // end early if invalid FGCOLOR second character
+        }
+    }
+
+    // ; or m Sentinel
+    ch = *buf++;
+    if (ch == 'm') {
+        *result_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
+        *result_color &= VGA_TEXT_COLOR_FG_CLEAR_MASK;
+        *result_color |= ansi_color_to_vga_color(fgcolor);
+        return *buf; // m sentinel is end of escape sequence, return
+    } else if (ch == ';') {
+        ch = *buf++; // ; sentinel means there's a BGCOLOR, get next char
+    } else {
+        return 0; // end early if m or ; sentinel not present
+    }
+
+    //BGCOLOR
+    if (ch == '0') {
+        bgcolor = 0;
+    } else if (ch == '4') {
+        bgcolor = 40;
+    } else if (ch == '1') {
+        ch = *buf++;
+        if (ch != '0')
+            return 0; // end early if invalid BGCOLOR second character
+        bgcolor = 100;
+    } else {
+        return 0; // end early if invalid BGCOLOR starting character
+    }
+    ch = *buf++;
+    if (bgcolor > 0) { // we have another digit to process
+        switch(ch) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+                bgcolor += ch - '0';
+                break;
+            default:
+                return 0; // end early if invalid BGCOLOR second character
+        }
+    }
+
+    // m Sentinel
+    ch = *buf++;
+    if (ch != 'm')
+        return 0; // end early if m sentinel not present
+
+    *result_color = 0;
+    if (fgcolor != 0) {
+        *result_color |= ansi_color_to_vga_color(fgcolor);
+    } else {
+        *result_color |= vga_text_fg(VGA_TEXT_COLOR_GRAY);
+    }
+    if (bgcolor != 0) {
+        *result_color |= ansi_color_to_vga_color(bgcolor);
+    } else {
+        *result_color |= vga_text_bg(VGA_TEXT_COLOR_BLACK);
+    }
+}
+
+unsigned int __vga_text_get_active_color() {
+    return active_color;
+}
+
+void __vga_text_set_active_color( unsigned int vga_text_color ) {
+    active_color = vga_text_color;
+}
+
+void __vga_text_init( void ) {
+    active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
+}

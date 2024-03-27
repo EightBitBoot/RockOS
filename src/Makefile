@@ -15,15 +15,15 @@
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   syscalls.c
+	   syscalls.c vgatext.c
 OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o
+	   syscalls.o vgatext.o
 
 OS_S_SRC =
 OS_S_OBJ =
 
 OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
-	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h
+	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h vgatext.h
 
 OS_LIBS =
 
@@ -289,7 +289,7 @@ depend:
 bootstrap.o: bootstrap.h
 startup.o: bootstrap.h
 isr_stubs.o: bootstrap.h
-cio.o: cio.h lib.h support.h x86arch.h x86pic.h
+cio.o: cio.h lib.h support.h x86arch.h x86pic.h vgatext.h
 libc.o: lib.h cio.h
 support.o: support.h lib.h cio.h x86arch.h x86pic.h bootstrap.h
 clock.o: x86arch.h x86pic.h x86pit.h common.h params.h kdefs.h cio.h
@@ -322,3 +322,4 @@ users.o: userland/userJ.c userland/userY.c userland/main4.c userland/userX.c
 users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
 users.o: userland/userS.c userland/main6.c userland/init.c userland/idle.c
 ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
+vgatext.o: vgatext.h
