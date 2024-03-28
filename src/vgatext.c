@@ -343,35 +343,35 @@ void __vga_text_color_test( unsigned int kb_val ) {
         // Blink Background Colors
         case 0x7a: // z
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_BLACK) | vga_text_fg(VGA_TEXT_COLOR_FG_WHITE);
-            __cio_printf("[VGA] text color test: (l) black background blink text\n");
+            __cio_printf("[VGA] text color test: (b) black background blink text\n");
             break;
         case 0x78: // x
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_BLUE);
-            __cio_printf("[VGA] text color test: (l) blue background blink text\n");
+            __cio_printf("[VGA] text color test: (b) blue background blink text\n");
             break;
         case 0x63: // c
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_GREEN);
-            __cio_printf("[VGA] text color test: (l) green background blink text\n");
+            __cio_printf("[VGA] text color test: (b) green background blink text\n");
             break;
         case 0x76: // v
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_CYAN);
-            __cio_printf("[VGA] text color test: (l) cyan background blink text\n");
+            __cio_printf("[VGA] text color test: (b) cyan background blink text\n");
             break;
         case 0x62: // b
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_RED);
-            __cio_printf("[VGA] text color test: (l) red background blink text\n");
+            __cio_printf("[VGA] text color test: (b) red background blink text\n");
             break;
         case 0x6e: // n
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_MAGENTA);
-            __cio_printf("[VGA] text color test: (l) magenta background blink text\n");
+            __cio_printf("[VGA] text color test: (b) magenta background blink text\n");
             break;
         case 0x6d: // m
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_ORANGE);
-            __cio_printf("[VGA] text color test: (l) orange background blink text\n");
+            __cio_printf("[VGA] text color test: (b) orange background blink text\n");
             break;
         case 0x2c: // ,
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_GRAY);
-            __cio_printf("[VGA] text color test: (l) gray background blink text\n");
+            __cio_printf("[VGA] text color test: (b) gray background blink text\n");
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
