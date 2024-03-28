@@ -244,7 +244,7 @@ void __vga_text_color_test( unsigned int kb_val ) {
         case 0x31: // 1
             // TODO: shows up as gray if we have a black background, maybe different with a colored background?
             active_color = vga_text_fg(VGA_TEXT_COLOR_BLACK);
-            __cio_printf("[VGA] text color test: black text\n");
+            __cio_printf("[VGA] text color test: (not) black text\n");
             break;
         case 0x32: // 2
             active_color = vga_text_fg(VGA_TEXT_COLOR_BLUE);
