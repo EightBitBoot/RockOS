@@ -702,7 +702,7 @@ SYSIMPL(vgatextclear)
 */
 SYSIMPL(vgatextgetactivecolor)
 {
-	 RET(_current) = __vga_get_active_color();
+	 RET(_current) = __vga_text_get_active_color();
 }
 
 /**
@@ -716,7 +716,7 @@ SYSIMPL(vgatextgetactivecolor)
 */
 SYSIMPL(vgatextsetactivecolor)
 {
-	__vga_set_active_color(ARG(_current,1));
+	__vga_text_set_active_color(ARG(_current,1));
 }
 
 // The system call jump table

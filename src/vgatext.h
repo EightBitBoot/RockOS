@@ -25,15 +25,15 @@
 // Default Color
 #define VGA_TEXT_DEFAULT_COLOR_BYTE 0x700
 // Active Color
-static unsigned int    active_color; // The color to be masked onto the character - as such, the lower 8 bits should be 0 and the upper 8 should store the VGA color data
+unsigned int    active_color; // The color to be masked onto the character - as such, the lower 8 bits should be 0 and the upper 8 should store the VGA color data
 
 // Utility Functions
 unsigned int vga_text_fg (unsigned int c);
 unsigned int vga_text_bg (unsigned int c);
-static char* parse_ansi_color_code(char *buf, int *result_color);
+char* parse_ansi_color_code(char *buf, int *result_color);
 unsigned int ansi_color_to_vga_color(unsigned int ansi_color);
 // System Calls
-unsigned int __vga_text_get_active_color();
+unsigned int __vga_text_get_active_color(void);
 void __vga_text_set_active_color(unsigned int vga_text_color);
 
 // Initialization Function

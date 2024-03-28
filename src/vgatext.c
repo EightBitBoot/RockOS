@@ -58,7 +58,7 @@ unsigned int ansi_color_to_vga_color(unsigned int ansi_color) {
     }
 }
 
-static char* parse_ansi_color_code(char *buf, int *result_color) {
+char* parse_ansi_color_code(char *buf, int *result_color) {
     /*
     ** See https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#colors--graphics-mode
     ** Supported formats:

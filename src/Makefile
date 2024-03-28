@@ -314,6 +314,7 @@ stacks.o: kmem.h procs.h x86arch.h
 syscalls.o: common.h params.h kdefs.h cio.h support.h lib.h x86arch.h
 syscalls.o: x86pic.h ./uart.h bootstrap.h syscalls.h queues.h sched.h procs.h
 syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h
+syscalls.o: vgatext.h
 ulibc.o: common.h params.h kdefs.h cio.h support.h lib.h
 users.o: common.h params.h kdefs.h cio.h support.h lib.h users.h
 users.o: userland/main1.c ulib.h userland/main2.c userland/main3.c
