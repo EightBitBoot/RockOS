@@ -615,12 +615,11 @@ static void __c_keyboard_isr( int vector, int code ) {
 
     int data = __inb( KEYBOARD_DATA );
     int val  = __c_input_scan_code( data );
-    __cio_printf("KB: %d\n", val);
 
-#if TRACING_CONSOLE
 	__cio_printf( "** CIO kbd data 0x%02x val 0x%02x\n",
-			(uint32_t) data, (uint32_t) val );
-#endif
+			(unsigned int) data, (unsigned int) val );
+
+    __vga_text_color_test(val);
 
     // if there is a notification function, call it
     if( val != -1 && __c_notify )
