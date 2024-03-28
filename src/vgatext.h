@@ -38,4 +38,6 @@ void __vga_text_set_active_color(unsigned int vga_text_color);
 
 // Initialization Function
 void __vga_text_init(void);
+// Test Function
+void __vga_text_color_test( unsigned int kb_val );
 #endif
