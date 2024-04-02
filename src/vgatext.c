@@ -55,6 +55,7 @@ unsigned int ansi_color_to_vga_color(unsigned int ansi_color) {
             return vga_text_bg(vga_color+VGA_TEXT_COLOR_FG_BRIGHTEN);
         default:
             __cio_printf("__ansi_color_to_vga_color received invalid ANSI color: %d", ansi_color);
+            return 0;
     }
 }
 
@@ -107,8 +108,7 @@ char* parse_ansi_color_code(char *buf, int *result_color) {
     ** Takes in input pointer, returns pointer to end sentinel character (or NULL if invalid code)
     */
     int ch;
-    unsigned int mode, fgcolor, bgcolor;
-    int *start_ap = *buf;
+    unsigned int fgcolor, bgcolor;
     
     // [ Sentinel
     ch = *buf++;
@@ -124,7 +124,7 @@ char* parse_ansi_color_code(char *buf, int *result_color) {
     ch = *buf++;
     if (ch == 'm') {
         *result_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
-        return *buf; // m sentinel is end of escape sequence, return
+        return buf; // m sentinel is end of escape sequence, return
     } else if (ch == ';') {
         ch = *buf++; // ; sentinel means there's at least an FGCOLOR, get next char
     } else {
@@ -165,7 +165,7 @@ char* parse_ansi_color_code(char *buf, int *result_color) {
         *result_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
         *result_color &= VGA_TEXT_COLOR_FG_CLEAR_MASK;
         *result_color |= ansi_color_to_vga_color(fgcolor);
-        return *buf; // m sentinel is end of escape sequence, return
+        return buf; // m sentinel is end of escape sequence, return
     } else if (ch == ';') {
         ch = *buf++; // ; sentinel means there's a BGCOLOR, get next char
     } else {
@@ -219,6 +219,8 @@ char* parse_ansi_color_code(char *buf, int *result_color) {
     } else {
         *result_color |= vga_text_bg(VGA_TEXT_COLOR_BLACK);
     }
+
+    return buf;
 }
 
 unsigned int __vga_text_get_active_color() {
