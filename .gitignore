@@ -8,3 +8,6 @@ BuildImage
 *.img
 *.dis
 *.nl
+
+# IDE Files
+.vscode/
