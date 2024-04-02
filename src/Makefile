@@ -322,5 +322,6 @@ users.o: userland/userH.c userland/userZ.c userland/userI.c userland/userW.c
 users.o: userland/userJ.c userland/userY.c userland/main4.c userland/userX.c
 users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
 users.o: userland/userS.c userland/main6.c userland/init.c userland/idle.c
+users.o: userland/main7.c
 ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
 vgatext.o: vgatext.h cio.h

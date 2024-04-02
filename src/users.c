@@ -36,7 +36,7 @@
 USERMAIN(idle);  USERMAIN(shell);
 
 USERMAIN(main1); USERMAIN(main2); USERMAIN(main3); USERMAIN(main4);
-USERMAIN(main5); USERMAIN(main6);
+USERMAIN(main5); USERMAIN(main6); USERMAIN(main7);
 
 USERMAIN(userA); USERMAIN(userB); USERMAIN(userC); USERMAIN(userD);
 USERMAIN(userE); USERMAIN(userF); USERMAIN(userG); USERMAIN(userH);
@@ -116,6 +116,8 @@ USERMAIN(userY); USERMAIN(userZ);
 #include "userland/main6.c"
 #include "userland/userW.c"
 #endif
+
+#include "userland/main7.c"
 
 /*
 ** System processes - these should always be included here

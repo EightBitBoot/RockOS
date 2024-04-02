@@ -179,6 +179,8 @@ static proc_t spawn_table_2[] = {
 #ifdef SPAWN_V
 	PROCENT( main6, UserPrio, "V", "userV", "V", "6", "k" ),
 #endif
+
+	PROCENT( main7, UserPrio, "V", "userV", "V"),
 	
 	// a dummy entry to use as a sentinel
 	// PROCENT( 0, 0, 0, 0 )

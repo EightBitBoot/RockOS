@@ -167,6 +167,36 @@ int32_t fork( void );
 int32_t exec( userfcn_t entry, char *args[] );
 
 /**
+** vgatextclear - clear the VGA console window
+**
+** usage:   vgatextclear()
+**
+** @returns void
+*/
+void vgatextclear( void );
+
+/**
+** vgatextgetactivecolor - get the current active VGA Text Mode Color
+**
+** usage:   vgatextgetactivecolor()
+**
+** @returns the current active VGA Text Mode Color
+*/
+unsigned int vgatextgetactivecolor( void );
+
+/**
+** vgatextsetactivecolor - set the current active VGA Text Mode Color
+**
+** usage:   vgatextsetactivecolor( color )
+**
+** @param color   the color to set as active
+** 
+** @returns void
+*/
+void vgatextsetactivecolor( unsigned int color );
+
+
+/**
 ** bogus - a nonexistent system call, to test our syscall ISR
 **
 ** usage:   bogus()
