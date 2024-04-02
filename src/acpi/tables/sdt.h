@@ -20,4 +20,24 @@ struct acpi_sdt_header {
 	uint32_t creator_revision;
 } __attribute__((packed));
 
+/**
+ * @struct acpi_sdt_root32
+ * @brief ACPI Root System Description Table
+ * @sa ACPI Specification (v6.5) Section 5.2.7
+ */
+struct acpi_sdt_root32 {
+	struct acpi_sdt_header header;
+	uint32_t *entry_addresses; // array size is header.length - sizeof(header)
+} __attribute__((packed));
+
+/**
+ * @struct acpi_sdt_root64
+ * @brief ACPI Root System Description Table
+ * @sa ACPI Specification (v6.5) Section 5.2.8
+ */
+struct acpi_sdt_root64 {
+	struct acpi_sdt_header header;
+	uint64_t *entry_addresses; // array size is header.length - sizeof(header)
+} __attribute__((packed));
+
 #endif

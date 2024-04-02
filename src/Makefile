@@ -15,9 +15,9 @@
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   syscalls.c vgatext.c acpi/acpi.c acpi/tables/rsdp.c
+	   syscalls.c vgatext.c acpi/acpi.c acpi/checksum.c acpi/tables/rsdp.c
 OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o vgatext.o acpi/acpi.o acpi/tables/rsdp.o
+	   syscalls.o vgatext.o acpi/acpi.o acpi/checksum.o acpi/tables/rsdp.o
 
 OS_S_SRC =
 OS_S_OBJ =
@@ -289,13 +289,8 @@ depend:
 
 bootstrap.o: bootstrap.h
 startup.o: bootstrap.h
-<<<<<<< HEAD
-isr_stubs.o: bootstrap.h
-cio.o: cio.h lib.h support.h x86arch.h x86pic.h vgatext.h
-=======
 isr_stubs.o: bootstrap.h offsets.h
-cio.o: cio.h lib.h support.h x86arch.h x86pic.h
->>>>>>> 848172c ([acpi] Refactor into subdirectory)
+cio.o: cio.h lib.h support.h x86arch.h x86pic.h vgatext.h
 libc.o: lib.h cio.h
 support.o: support.h lib.h cio.h x86arch.h x86pic.h bootstrap.h
 clock.o: common.h params.h kdefs.h cio.h support.h lib.h clock.h queues.h
@@ -319,20 +314,19 @@ stacks.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
 stacks.o: kmem.h procs.h x86arch.h bootstrap.h
 syscalls.o: common.h params.h kdefs.h cio.h support.h lib.h x86arch.h
 syscalls.o: x86pic.h ./uart.h bootstrap.h syscalls.h queues.h sched.h procs.h
-syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h
-<<<<<<< HEAD
-syscalls.o: vgatext.h
-=======
+syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h vgatext.h
+vgatext.o: vgatext.h cio.h
 acpi/acpi.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h lib.h
-acpi/acpi.o: debug.h
->>>>>>> 848172c ([acpi] Refactor into subdirectory)
+acpi/acpi.o: ./acpi/tables/rsdp.h ./acpi/tables/sdt.h debug.h
+acpi/checksum.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h lib.h
+acpi/tables/rsdp.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h
+acpi/tables/rsdp.o: lib.h ./acpi/tables/rsdp.h debug.h
 ulibc.o: common.h params.h kdefs.h cio.h support.h lib.h
 users.o: common.h params.h kdefs.h cio.h support.h lib.h users.h
 users.o: userland/main1.c ulib.h userland/main2.c userland/main3.c
 users.o: userland/userH.c userland/userZ.c userland/userI.c userland/userW.c
 users.o: userland/userJ.c userland/userY.c userland/main4.c userland/userX.c
 users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
-users.o: userland/userS.c userland/main6.c userland/init.c userland/idle.c
-users.o: userland/main7.c
+users.o: userland/userS.c userland/main6.c userland/main7.c vgatext.h
+users.o: userland/init.c userland/idle.c
 ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
-vgatext.o: vgatext.h cio.h
