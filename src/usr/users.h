@@ -153,6 +153,8 @@
 // #define SPAWN_TEST_VGA
 #endif
 
+#define WTSH_SHELL
+
 //
 // There is no userO.  Users W-Z are spawned from other
 // processes; they should never be spawned directly by init().

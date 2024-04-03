@@ -33,7 +33,7 @@
 ** for completeness)
 */
 
-USERMAIN(idle);  USERMAIN(shell);
+USERMAIN(idle);  USERMAIN(shell); USERMAIN(wtsh_main);
 
 USERMAIN(main1); USERMAIN(main2); USERMAIN(main3); USERMAIN(main4);
 USERMAIN(main5); USERMAIN(main6); USERMAIN(main7); USERMAIN(main8);
@@ -126,6 +126,10 @@ USERMAIN(test_vfs);
 
 #if defined(SPAWN_TEST_VFS)
 #include "userland/test_vfs.c"
+#endif
+
+#if defined(WTSH_SHELL)
+#include "userland/wtsh.c"
 #endif
 
 /*

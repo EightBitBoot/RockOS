@@ -73,6 +73,10 @@ static proc_t spawn_table_1[] = {
 	PROCENT( shell, SysPrio, "@", "shell" ),
 #endif
 
+#ifdef WTSH_SHELL
+	PROCENT(wtsh_main, SysPrio, "@", "wtsh"),
+#endif
+
 	// PROCENT( 0, 0, 0, 0 )
 	{ 0 }
 };
@@ -83,7 +87,7 @@ static proc_t spawn_table_1[] = {
 ** processes.
 */
 static proc_t spawn_table_2[] = {
-
+#ifndef WTSH_SHELL
 	// Users A-C each run main1, which loops printing its character
 #ifdef SPAWN_A
 	PROCENT( main1, UserPrio, "A", "userA", "A", "30" ),
