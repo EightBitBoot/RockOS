@@ -1,0 +1,84 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+
+#include "kstring.h"
+
+#define NULL ((void *)0)
+#define __strlen(s) strlen(s)
+
+#define KSTR_FMT "%.*s"
+#define KSTR_FMT_ARGS(s) (s)->len, (s)->str
+
+int main(int argc, char **argv) {
+    kstr_t empty_string = KSTR_EMPTY;
+    assert(empty_string.str == NULL);
+    assert(empty_string.len == 0);
+
+    char *str = "abcdefg";
+    kstr_t create_str = KSTR_CREATE(str, 7);
+    assert(create_str.str == str);
+    assert(create_str.len == 7);
+
+    assert(KSTR_STRLEN(&create_str) == 7);
+
+    kstr_t l_equal = KSTR_CREATE("hijklmnop", 9);
+    kstr_t r_equal = KSTR_CREATE("hijklmnop", 9);
+    assert(KSTR_IS_EQUAL(&l_equal, &r_equal));
+
+    char *l_neq_lit = "qrstuvwxyz";
+    char *r_neq_lit = "onbeyondz";
+    kstr_t l_neq = KSTR_CREATE(l_neq_lit, 10);
+    kstr_t r_neq = KSTR_CREATE(r_neq_lit, 9);
+
+    assert(kstr_strcmp(&l_neq, &r_neq) == strcmp(l_neq_lit, r_neq_lit));
+    assert(kstr_strcmp(&r_neq, &l_neq) == strcmp(r_neq_lit, l_neq_lit));
+    assert(kstr_strcmp(&l_neq, &empty_string) == strcmp(l_neq_lit, ""));
+    assert(kstr_strcmp(&empty_string, &r_neq) == strcmp("", r_neq_lit));
+    assert(kstr_strcmp(&empty_string, &empty_string) == strcmp("", ""));
+
+    kstr_t strtok_test_1 = KSTR_LIT_CREATE("///a/b/c////////d/e/");
+    kstr_t strtok_test_2 = KSTR_EMPTY;
+    kstr_t strtok_test_3 = KSTR_LIT_CREATE("a/b/c");
+    kstr_t strtok_test_4 = KSTR_LIT_CREATE("a\\b\\c");
+
+    printf("Test1:\n");
+    kstr_strtok_context_t context = {};
+    kstr_t result = KSTR_EMPTY;
+    while((result = kstr_strtok(&strtok_test_1, '/', &context)).str != NULL) {
+        printf("    " KSTR_FMT "\n", KSTR_FMT_ARGS(&result));
+    }
+
+    printf("\n");
+
+    printf("Test2:\n");
+    memset(&context, 0, sizeof(context));
+    while((result = kstr_strtok(&strtok_test_2, '/', &context)).str != NULL) {
+        printf("    " KSTR_FMT "\n", KSTR_FMT_ARGS(&result));
+    }
+
+    printf("\n");
+
+    printf("Test3:\n");
+    memset(&context, 0, sizeof(context));
+    while((result = kstr_strtok(&strtok_test_3, '/', &context)).str != NULL) {
+        printf("    " KSTR_FMT "\n", KSTR_FMT_ARGS(&result));
+    }
+
+    printf("\n");
+
+    printf("Test4:\n");
+    memset(&context, 0, sizeof(context));
+    while((result = kstr_strtok(&strtok_test_4, '/', &context)).str != NULL) {
+        printf("    " KSTR_FMT "\n", KSTR_FMT_ARGS(&result));
+    }
+
+    printf("\n");
+
+    printf("Hashing \"" KSTR_FMT "\": 0x%08X, Expected: 0x%08X\n", KSTR_FMT_ARGS(&strtok_test_1), kstr_hash(&strtok_test_1), 0x79209B2D);
+    printf("Hashing \"" KSTR_FMT "\": 0x%08X, Expected: 0x%08X\n", KSTR_FMT_ARGS(&strtok_test_2), kstr_hash(&strtok_test_2), 2166136261);
+    printf("Hashing \"" KSTR_FMT "\": 0x%08X, Expected: 0x%08X\n", KSTR_FMT_ARGS(&strtok_test_3), kstr_hash(&strtok_test_3), 0xCA1B47AB);
+    printf("Hashing \"" KSTR_FMT "\": 0x%08X, Expected: 0x%08X\n", KSTR_FMT_ARGS(&strtok_test_4), kstr_hash(&strtok_test_4), 0xDDD6E567);
+}
