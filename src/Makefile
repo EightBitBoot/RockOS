@@ -10,23 +10,31 @@
 #  FILE SECTION  #
 ##################
 
+BUILD_DIR = build
+OBJ_DIR = $(BUILD_DIR)/obj
+
+BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR)
+
+VPATH ::= $(subst " ",:,$(shell find . -type d))
+
 #
 # OS files
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   syscalls.c vgatext.c acpi/acpi.c acpi/checksum.c acpi/tables/rsdp.c
-OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o vgatext.o acpi/acpi.o acpi/checksum.o acpi/tables/rsdp.o
+	   	   syscalls.c vgatext.c acpi/acpi.c acpi/checksum.c acpi/tables/rsdp.c
 
 OS_S_SRC =
-OS_S_OBJ =
 
 OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
-	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h \
-	   vgatext.h acpi/acpi.h
+	   	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h \
+	   	   vgatext.h acpi/acpi.h
 
 OS_LIBS =
+
+OS_C_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(OS_C_SRC:.c=.o)))
+OS_S_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(OS_S_SRC:.S=.o)))
+
 
 OS_SRCS = $(OS_C_SRC) $(OS_S_SRC)
 OS_OBJS = $(OS_C_OBJ) $(OS_S_OBJ)
@@ -36,15 +44,15 @@ OS_OBJS = $(OS_C_OBJ) $(OS_S_OBJ)
 #
 
 USR_C_SRC = ulibc.c users.c
-USR_C_OBJ = ulibc.o users.o
-
 
 USR_S_SRC = ulibs.S
-USR_S_OBJ = ulibs.o
 
 USR_HDRS  = udefs.h ulib.h users.h
 
 USR_LIBS  =
+
+USR_C_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(USR_C_SRC:.c=.o)))
+USR_S_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(USR_S_SRC:.S=.o)))
 
 USR_SRCS  = $(USR_C_SRC) $(USR_S_SRC)
 USR_OBJS  = $(USR_C_OBJ) $(USR_S_OBJ)
@@ -54,19 +62,20 @@ USR_OBJS  = $(USR_C_OBJ) $(USR_S_OBJ)
 #
 
 FMK_S_SRC = startup.S isr_stubs.S libs.S
-FMK_S_OBJ = startup.o isr_stubs.o libs.o
 
 FMK_C_SRC = cio.c libc.c support.c
-FMK_C_OBJ = cio.o libc.o support.o
 
 FMK_HDRS = bootstrap.h cio.h lib.h support.h uart.h \
-	   x86arch.h x86pic.h x86pit.h
+	   	   x86arch.h x86pic.h x86pit.h
 
-BOOT_SRC = bootstrap.S
-BOOT_OBJ = bootstrap.o
+FMK_S_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(FMK_S_SRC:.S=.o)))
+FMK_C_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(FMK_C_SRC:.c=.o)))
 
 FMK_SRCS = $(FMK_S_SRC) $(FMK_C_SRC)
 FMK_OBJS = $(FMK_S_OBJ) $(FMK_C_OBJ)
+
+BOOT_SRC = bootstrap.S
+BOOT_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(BOOT_SRC:.S:.o)))
 
 # Collections of files
 
@@ -159,13 +168,13 @@ ASFLAGS = --32
 LD = ld
 LDFLAGS = -melf_i386 -no-pie
 
-#		
+#
 # Transformation rules - these ensure that all compilation
 # flags that are necessary are specified
 #
 # Note use of 'cpp' to convert .S files to temporary .s files: this allows
 # use of #include/#define/#ifdef statements. However, the line numbers of
-# error messages reflect the .s file rather than the original .S file. 
+# error messages reflect the .s file rather than the original .S file.
 # (If the .s file already exists before a .S file is assembled, then
 # the temporary .s file is not deleted.  This is useful for figuring
 # out the line numbers of error messages, but take care not to accidentally
@@ -188,17 +197,17 @@ LDFLAGS = -melf_i386 -no-pie
 .S.s:
 	$(CPP) $(CPPFLAGS) -o $*.s $*.S
 
-.S.o:
+$(OBJ_DIR)/%.o: %.S $(OBJ_DIR)
 	$(CPP) $(CPPFLAGS) -o $*.s $*.S
-	$(AS) $(ASFLAGS) -o $*.o $*.s -a=$*.lst
+	$(AS) $(ASFLAGS) -o $@ $*.s -a=$*.lst
 	$(RM) -f $*.s
 
 .s.b:
 	$(AS) $(ASFLAGS) -o $*.o $*.s -a=$*.lst
 	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
 
-.c.o:
-	$(CC) $(CFLAGS) -c $*.c -o $*.o
+$(OBJ_DIR)/%.o: %.c $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .c.i:
 	$(CC) -E $(CFLAGS) -c $*.c > $*.i
@@ -209,10 +218,10 @@ LDFLAGS = -melf_i386 -no-pie
 # Default target:  disk.img
 #
 
-disk.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis 
+disk.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis
 	./BuildImage -d usb -o disk.img -b bootstrap.b prog.b 0x10000
 
-floppy.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis 
+floppy.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis
 	./BuildImage -d floppy -o floppy.img -b bootstrap.b prog.b 0x10000
 
 prog.out: $(OBJECTS)
@@ -249,6 +258,9 @@ Offsets:	Offsets.c procs.h stacks.h queues.h common.h
 
 offsets.h:	Offsets
 	./Offsets -h
+
+$(BUILD_DIRS):
+	mkdir -p $@
 
 #
 # Clean out this directory

@@ -9,5 +9,7 @@ BuildImage
 *.dis
 *.nl
 
+src/build/
+
 # IDE Files
 .vscode/
