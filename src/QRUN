@@ -21,6 +21,13 @@
 DSL=/usr/local/dcs/bin/qemu-system-i386
 MAIN=/home/course/csci352/bin/qemu-system-i386
 
-exec $MAIN \
-	-serial mon:stdio \
-	-drive file=disk.img,index=0,media=disk,format=raw
+# exec $MAIN \
+	# -serial mon:stdio \
+    # -nographic \
+    # -vnc :0 \
+    # -curses \
+    # -monitor stdio \
+    # -display none \
+	# -drive file=disk.img,index=0,media=disk,format=raw
+
+exec $MAIN -nographic -curses -drive file=disk.img,index=0,media=disk,format=raw
