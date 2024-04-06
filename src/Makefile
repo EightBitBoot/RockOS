@@ -6,14 +6,21 @@
 # assignments and the SP baseline OS (with appropriate tweaking).
 #
 
+#
+# Fancy, fast dependency generation taken from
+# https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
+# (specifically the "Combining Compilation and Dependency Generation" section)
+#
+
 ##################
 #  FILE SECTION  #
 ##################
 
 BUILD_DIR = build
+DEP_DIR = $(BUILD_DIR)/dep
 OBJ_DIR = $(BUILD_DIR)/obj
 
-BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR)
+BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR)
 
 VPATH ::= $(subst " ",:,$(shell find . -type d))
 
@@ -82,6 +89,23 @@ BOOT_OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(BOOT_SRC:.S:.o)))
 OBJECTS = $(FMK_OBJS) $(OS_OBJS) $(USR_OBJS)
 
 SOURCES = $(BOOT_SRC) $(FMK_SRCS) $(OS_SRCS) $(USR_SRCS)
+
+DEPENDENCIES = $(OBJECTS:$(OBJ_DIR)/%.o=$(DEP_DIR)/%.d)
+# Temp workaround for bootstrap.S because it goes .S -> .s -> .d
+# and never becomes an object: therefore it isn't included in
+# $(OBJECTS) or $(DEPENDENCIES).
+#
+# Without it being in $(DEPENDENCIES), the second to last line
+# $(DEPENDENCIES): doesn't include it as an empty target.  Finally,
+# without the empty target, the dependency for %.s: %.S ($(DEP_DIR)/%.d),
+# is missing, has no rule to be built, and therefore the entire
+# pattern rule is skipped.  Instead make uses a builtin, default
+# implicit rule (along the lines of to .S.s) which doesn't include
+# $(DEPFLAGS) and therefore doesn't build the dependency file.
+#
+# TODO(Adin): Add an explicit rule for bootstrap.b (a la prog.b)
+# and change bootstrap to be built as a regular object file (.o)
+DEPENDENCIES += $(DEP_DIR)/bootstrap.d
 
 #####################
 #  OPTIONS SECTION  #
@@ -161,6 +185,7 @@ CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
 #
 CC = gcc
 CFLAGS = -m32 -fno-pie -std=c99 -fno-stack-protector -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS) $(EXTRAS)
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.d
 
 AS = as
 ASFLAGS = --32
@@ -186,7 +211,29 @@ LDFLAGS = -melf_i386 -no-pie
 # exactly what C statement generated which assembly statements!
 #
 
-.SUFFIXES:	.S .b .X .i
+#
+# offsets.h is included as a prerequisite for all compilation targets
+# because of the shift to "fancy" dependency rule generation.  The first
+# time make is run now, there are no dependency targets.  Theoretically
+# all should be well because everything will be regenerated, including
+# offsets.h.  Indeed this does happen as offset.h is a prerequisite of
+# disk.img.
+#
+# However, this is a race condition when running on multiple # processes
+# with -j.  make has no idea that certian .o files also rely on offsets.h
+# and can schedule them to be built at the same time as or even before
+# offsets.h is built.  This results in gcc not finding the file and the
+# build failing.
+#
+# Adding it as a prerequisite here fixes the issue and only causes a full
+# recompile in an unlikely edge case.  common.h is auto generated and should
+# never be modified by hand.  In the off chance it is changed by hand (or any
+# of its prerequisites are changed), a full recompilation will be triggered.
+# However, in all other cases it will sit unchanged and will not have any
+# effect on the out of date status of any targets.
+#
+
+.SUFFIXES: .b .X .i
 
 .c.X:
 	$(CC) $(CFLAGS) -g -c -Wa,-adhln $*.c > $*.X
@@ -194,11 +241,12 @@ LDFLAGS = -melf_i386 -no-pie
 .c.s:
 	$(CC) $(CFLAGS) -S $*.c
 
-.S.s:
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
+# TODO(Adin): Move the generated files to a new directory
+%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR)
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $*.s $*.S
 
-$(OBJ_DIR)/%.o: %.S $(OBJ_DIR)
-	$(CPP) $(CPPFLAGS) -o $*.s $*.S
+$(OBJ_DIR)/%.o: offsets.h %.S $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $*.s $*.S
 	$(AS) $(ASFLAGS) -o $@ $*.s -a=$*.lst
 	$(RM) -f $*.s
 
@@ -206,11 +254,20 @@ $(OBJ_DIR)/%.o: %.S $(OBJ_DIR)
 	$(AS) $(ASFLAGS) -o $*.o $*.s -a=$*.lst
 	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
 
-$(OBJ_DIR)/%.o: %.c $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
+	$(CC) $(DEPFLAGS) $(CFLAGS) -c -o $@ $<
 
 .c.i:
 	$(CC) -E $(CFLAGS) -c $*.c > $*.i
+
+#
+# -- DO NOT UNCOMMENT --
+# This is the wrong way to generate dependencies and
+# is here for documentation purposes only
+#
+
+# $(DEP_DIR)/%.d: %.c | $(DEP_DIR)
+# 	$(CC) $(CFLAGS) -MM -o $@ $<
 
 #
 # Targets for remaking bootable image of the program
@@ -271,6 +328,7 @@ clean:
 
 realclean:	clean
 	rm -f offsets.h *.img BuildImage Offsets
+	rm -rf $(BUILD_DIR)
 
 #
 # Create a printable namelist from the prog.o file
@@ -290,55 +348,8 @@ prog.dis: prog.o
 	objdump -d prog.o > prog.dis
 
 #
-# 'makedepend' is a program which creates dependency lists by looking
-# at the #include lines in the source files.
+# Include all dependency files generated from the last run(s) of make
 #
 
-depend:
-	makedepend $(INCLUDES) $(SOURCES)
-
-# DO NOT DELETE THIS LINE -- make depend depends on it.
-
-bootstrap.o: bootstrap.h
-startup.o: bootstrap.h
-isr_stubs.o: bootstrap.h offsets.h
-cio.o: cio.h lib.h support.h x86arch.h x86pic.h vgatext.h
-libc.o: lib.h cio.h
-support.o: support.h lib.h cio.h x86arch.h x86pic.h bootstrap.h
-clock.o: common.h params.h kdefs.h cio.h support.h lib.h clock.h queues.h
-clock.o: procs.h stacks.h kmem.h sched.h sio.h compat.h kernel.h x86arch.h
-clock.o: syscalls.h x86pic.h x86pit.h
-kernel.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-kernel.o: kmem.h procs.h x86arch.h queues.h users.h bootstrap.h acpi/acpi.h
-kernel.o: clock.h sched.h sio.h compat.h syscalls.h
-kmem.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
-kmem.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h bootstrap.h
-procs.o: common.h params.h kdefs.h cio.h support.h lib.h procs.h stacks.h
-procs.o: kmem.h kernel.h x86arch.h sched.h queues.h
-queues.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-queues.o: kmem.h procs.h x86arch.h queues.h
-sched.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-sched.o: kmem.h procs.h x86arch.h sched.h queues.h
-sio.o: compat.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
-sio.o: procs.h stacks.h kmem.h sched.h kernel.h x86arch.h ./uart.h x86pic.h
-sio.o: sio.h
-stacks.o: common.h params.h kdefs.h cio.h support.h lib.h kernel.h stacks.h
-stacks.o: kmem.h procs.h x86arch.h bootstrap.h
-syscalls.o: common.h params.h kdefs.h cio.h support.h lib.h x86arch.h
-syscalls.o: x86pic.h ./uart.h bootstrap.h syscalls.h queues.h sched.h procs.h
-syscalls.o: stacks.h kmem.h clock.h sio.h compat.h kernel.h vgatext.h
-vgatext.o: vgatext.h cio.h
-acpi/acpi.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h lib.h
-acpi/acpi.o: ./acpi/tables/rsdp.h ./acpi/tables/sdt.h debug.h
-acpi/checksum.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h lib.h
-acpi/tables/rsdp.o: acpi/acpi.h common.h params.h kdefs.h cio.h support.h
-acpi/tables/rsdp.o: lib.h ./acpi/tables/rsdp.h debug.h
-ulibc.o: common.h params.h kdefs.h cio.h support.h lib.h
-users.o: common.h params.h kdefs.h cio.h support.h lib.h users.h
-users.o: userland/main1.c ulib.h userland/main2.c userland/main3.c
-users.o: userland/userH.c userland/userZ.c userland/userI.c userland/userW.c
-users.o: userland/userJ.c userland/userY.c userland/main4.c userland/userX.c
-users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
-users.o: userland/userS.c userland/main6.c userland/main7.c vgatext.h
-users.o: userland/init.c userland/idle.c
-ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
+$(DEPENDENCIES):
+-include $(DEPENDENCIES)
