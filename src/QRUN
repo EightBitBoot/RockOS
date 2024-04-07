@@ -30,4 +30,4 @@ MAIN=/home/course/csci352/bin/qemu-system-i386
     # -display none \
 	# -drive file=disk.img,index=0,media=disk,format=raw
 
-exec $MAIN -nographic -curses -drive file=disk.img,index=0,media=disk,format=raw
+exec $MAIN -nographic -curses -drive file=build/disk.img,index=0,media=disk,format=raw

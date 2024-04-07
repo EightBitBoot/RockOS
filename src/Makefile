@@ -21,8 +21,9 @@ DEP_DIR = $(BUILD_DIR)/dep
 OBJ_DIR = $(BUILD_DIR)/obj
 ASM_DIR = $(BUILD_DIR)/asm
 LST_DIR = $(BUILD_DIR)/lst
+BIN_DIR = $(BUILD_DIR)/bin
 
-BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR) $(ASM_DIR) $(LST_DIR)
+BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR) $(ASM_DIR) $(LST_DIR) $(BIN_DIR)
 
 VPATH ::= $(subst " ",:,$(shell find . -type d))
 
@@ -250,11 +251,10 @@ $(ASM_DIR)/%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(ASM_DIR)
 $(OBJ_DIR)/%.o: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR) $(ASM_DIR) $(LST_DIR)
 	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $*.S
 	$(AS) $(ASFLAGS) -o $@ $(ASM_DIR)/$*.s -a=$(LST_DIR)/$*.lst
-#   $(RM) -f $*.s
 
-$(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR)
+$(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR) $(BIN_DIR)
 	$(AS) $(ASFLAGS) -o $(OBJ_DIR)/$*.o $< -a=$(LST_DIR)/$*.lst
-	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $(OBJ_DIR)/$*.o
+	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $@ $(OBJ_DIR)/$*.o
 
 $(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
 	$(CC) $(DEPFLAGS) $(CFLAGS) -c -o $@ $<
@@ -277,29 +277,42 @@ $(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
 # Default target:  disk.img
 #
 
-disk.img: offsets.h $(BIN_DIR)/bootstrap.b prog.b prog.nl BuildImage prog.dis
-	./BuildImage -d usb -o disk.img -b bootstrap.b prog.b 0x10000
+.PHONY: disk.img floppy.img prog.out prog.o
 
-floppy.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis
-	./BuildImage -d floppy -o floppy.img -b bootstrap.b prog.b 0x10000
+disk.img: $(BUILD_DIR)/disk.img
 
-prog.out: $(OBJECTS)
-	$(LD) $(LDFLAGS) -o prog.out $(OBJECTS)
+floppy.img: $(BUILD_DIR)/floppy.img
 
-prog.o:	$(OBJECTS)
-	$(LD) $(LDFLAGS) -o prog.o -Ttext 0x10000 $(OBJECTS) $(A_LIBS)
+prog.out: $(BUILD_DIR)/prog.out
 
-prog.b:	prog.o
-	$(LD) $(LDFLAGS) -o prog.b -s --oformat binary -Ttext 0x10000 prog.o
+prog.o: $(OBJ_DIR)/prog.o
 
+prog.b: $(BIN_DIR)/prog.b
+
+$(BUILD_DIR)/disk.img: offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
+	$(BUILD_DIR)/BuildImage -d usb -o $(BUILD_DIR)/disk.img -b $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b 0x10000
+
+$(BUILD_DIR)/floppy.img: offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
+	$(BUILD_DIR)/BuildImage -d floppy -o $(BUILD_DIR)/floppy.img -b $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b 0x10000
+
+$(BUILD_DIR)/prog.out: $(OBJECTS) | $(BUILD_DIR)
+	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/prog.out $(OBJECTS)
+
+$(OBJ_DIR)/prog.o: $(OBJECTS) | $(OBJ_DIR)
+	$(LD) $(LDFLAGS) -o $(OBJ_DIR)/prog.o -Ttext 0x10000 $(OBJECTS) $(A_LIBS)
+
+$(BIN_DIR)/prog.b: $(OBJ_DIR)/prog.o | $(BIN_DIR)
+	$(LD) $(LDFLAGS) -o $(BIN_DIR)/prog.b -s --oformat binary -Ttext 0x10000 $(OBJ_DIR)/prog.o
 #
 # Targets for copying bootable image onto boot devices
 #
 
-floppy:	floppy.img
+.PHONY: floppy usb
+
+floppy: floppy.img
 	dd if=floppy.img of=/dev/fd0
 
-usb:	disk.img
+usb: disk.img
 	/usr/local/dcs/bin/dcopy disk.img
 
 #
@@ -309,14 +322,20 @@ usb:	disk.img
 # as for the standalone binaries.
 #
 
-BuildImage:	BuildImage.c
-	$(CC) -o BuildImage BuildImage.c
+.PHONY: BuildImage Offsets
 
-Offsets:	Offsets.c procs.h stacks.h queues.h common.h
-	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o Offsets Offsets.c
+BuildImage:	$(BUILD_DIR)/BuildImage
 
-offsets.h:	Offsets
-	./Offsets -h
+Offsets: $(BUILD_DIR)/Offsets
+
+offsets.h: $(BUILD_DIR)/Offsets
+	$(BUILD_DIR)/Offsets -h
+
+$(BUILD_DIR)/BuildImage: BuildImage.c | $(BUILD_DIR)
+	$(CC) -o $(BUILD_DIR)/BuildImage BuildImage.c
+
+$(BUILD_DIR)/Offsets: Offsets.c procs.h stacks.h queues.h common.h | $(BUILD_DIR)
+	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o $(BUILD_DIR)/Offsets Offsets.c
 
 $(BUILD_DIRS):
 	mkdir -p $@
@@ -325,10 +344,12 @@ $(BUILD_DIRS):
 # Clean out this directory
 #
 
+.PHONY: clean realclean
+
 clean:
 	rm -f *.nl *.nll *.lst *.b *.i *.o *.X *.dis
 
-realclean:	clean
+realclean: clean
 	rm -f offsets.h *.img BuildImage Offsets
 	rm -rf $(BUILD_DIR)
 
@@ -336,18 +357,28 @@ realclean:	clean
 # Create a printable namelist from the prog.o file
 #
 
-prog.nl: prog.o
-	nm -Bng prog.o | pr -w80 -3 > prog.nl
+.PHONY: prog.nl prog.nll
 
-prog.nll: prog.o
-	nm -Bn prog.o | pr -w80 -3 > prog.nll
+prog.nl: $(BUILD_DIR)/prog.nl
+
+prog.nll: $(BUILD_DIR)/prog.nll
+
+$(BUILD_DIR)/prog.nl: $(OBJ_DIR)/prog.o | $(BUILD_DIR)
+	nm -Bng $(OBJ_DIR)/prog.o | pr -w80 -3 > $(BUILD_DIR)/prog.nl
+
+$(BUILD_DIR)/prog.nll: $(OBJ_DIR)/prog.o | $(BUILD_DIR)
+	nm -Bn $(OBJ_DIR)/prog.o | pr -w80 -3 > $(BUILD_DIR)/prog.nll
 
 #
 # Generate a disassembly
 #
 
-prog.dis: prog.o
-	objdump -d prog.o > prog.dis
+.PHONY: prog.dis
+
+prog.dis: $(BUILD_DIR)/prog.dis
+
+$(BUILD_DIR)/prog.dis: $(OBJ_DIR)/prog.o | $(BUILD_DIR)
+	objdump -d $(OBJ_DIR)/prog.o > $(BUILD_DIR)/prog.dis
 
 #
 # Include all dependency files generated from the last run(s) of make
