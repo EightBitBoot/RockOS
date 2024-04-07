@@ -16,6 +16,8 @@
 #  FILE SECTION  #
 ##################
 
+SRC_DIR = src
+
 BUILD_DIR = build
 DEP_DIR = $(BUILD_DIR)/dep
 OBJ_DIR = $(BUILD_DIR)/obj
@@ -25,7 +27,7 @@ BIN_DIR = $(BUILD_DIR)/bin
 
 BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR) $(ASM_DIR) $(LST_DIR) $(BIN_DIR)
 
-VPATH ::= $(subst " ",:,$(shell find . -type d))
+VPATH ::= $(subst " ",:,$(shell find $(SRC_DIR) -type d))
 
 #
 # OS files
@@ -175,7 +177,7 @@ USER_OPTIONS = $(GEN_OPTIONS) $(DBG_OPTIONS)
 # We only want to include from the current directory
 #
 # INCLUDES = -I. -I/home/fac/wrc/include
-INCLUDES = -I.
+INCLUDES = -I$(SRC_DIR)
 
 #
 # Compilation/assembly/linking commands and options
@@ -249,7 +251,7 @@ $(ASM_DIR)/%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(ASM_DIR)
 	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $@ $<
 
 $(OBJ_DIR)/%.o: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR) $(ASM_DIR) $(LST_DIR)
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $*.S
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $<
 	$(AS) $(ASFLAGS) -o $@ $(ASM_DIR)/$*.s -a=$(LST_DIR)/$*.lst
 
 $(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR) $(BIN_DIR)
@@ -289,10 +291,10 @@ prog.o: $(OBJ_DIR)/prog.o
 
 prog.b: $(BIN_DIR)/prog.b
 
-$(BUILD_DIR)/disk.img: offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
+$(BUILD_DIR)/disk.img: $(SRC_DIR)/offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
 	$(BUILD_DIR)/BuildImage -d usb -o $(BUILD_DIR)/disk.img -b $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b 0x10000
 
-$(BUILD_DIR)/floppy.img: offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
+$(BUILD_DIR)/floppy.img: $(SRC_DIR)/offsets.h $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b $(BUILD_DIR)/BuildImage $(BUILD_DIR)/prog.nl $(BUILD_DIR)/prog.dis | $(BUILD_DIR)
 	$(BUILD_DIR)/BuildImage -d floppy -o $(BUILD_DIR)/floppy.img -b $(BIN_DIR)/bootstrap.b $(BIN_DIR)/prog.b 0x10000
 
 $(BUILD_DIR)/prog.out: $(OBJECTS) | $(BUILD_DIR)
@@ -328,14 +330,16 @@ BuildImage:	$(BUILD_DIR)/BuildImage
 
 Offsets: $(BUILD_DIR)/Offsets
 
-offsets.h: $(BUILD_DIR)/Offsets
-	$(BUILD_DIR)/Offsets -h
+offsets.h: $(SRC_DIR)/offsets.h
+
+$(SRC_DIR)/offsets.h: $(BUILD_DIR)/Offsets
+	$(BUILD_DIR)/Offsets -h $(SRC_DIR)/offsets.h
 
 $(BUILD_DIR)/BuildImage: BuildImage.c | $(BUILD_DIR)
-	$(CC) -o $(BUILD_DIR)/BuildImage BuildImage.c
+	$(CC) -o $(BUILD_DIR)/BuildImage $(SRC_DIR)/BuildImage.c
 
 $(BUILD_DIR)/Offsets: Offsets.c procs.h stacks.h queues.h common.h | $(BUILD_DIR)
-	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o $(BUILD_DIR)/Offsets Offsets.c
+	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o $(BUILD_DIR)/Offsets $(SRC_DIR)/Offsets.c
 
 $(BUILD_DIRS):
 	mkdir -p $@

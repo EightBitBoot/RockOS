@@ -42,6 +42,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <libgen.h>
 
 /*
 ** We don't include <time.h> because of conflicts with
@@ -59,7 +60,7 @@ extern __time_t time( __time_t *tloc );
 ** puts a newline at the end of the string it produces.
 */
 char h_prefix[] = "/**\n"
-"** @file offsets.h\n"
+"** @file %s\n"
 "**\n"
 "** GENERATED AUTOMATICALLY - DO NOT EDIT\n"
 "**\n"
@@ -101,20 +102,21 @@ void process( const char *sname, const char *field, size_t bytes ) {
 }
 
 // create the .h file and dump out the header
-void setheader( void ) {
+void setheader( char *header_path ) {
     // trigger output into the header file
     genheader = 1;
 
-    hfile = fopen( "offsets.h", "w" );
+    hfile = fopen( header_path, "w" );
     if( hfile == NULL ) {
-        perror( "offsets.h" );
+        perror( header_path );
         exit( 1 );
     }
 
     __time_t t;
     (void) time( &t );
 
-    fprintf( hfile, h_prefix, ctime(&t) );
+    // No copy needed for basename as header_path isn't used after
+    fprintf( hfile, h_prefix, basename(header_path), ctime(&t));
 }
 
 // introduce an "offsets" section
@@ -141,7 +143,12 @@ int main( int argc, char *argv[] ) {
 
     // -h:  produce an offsets.h header file
     if( argc > 1 && strcmp(argv[1],"-h") == 0 ) {
-        setheader();
+        char *header_path = "offsets.h";
+        if ( argc > 2 ) {
+            header_path = argv[2];
+        }
+
+        setheader( header_path );
     }
 
     /*
