@@ -1,8 +1,8 @@
 #include <acpi/acpi.h>
 #include <acpi/tables/rsdp.h>
 #include <acpi/tables/sdt.h>
-#include "cio.h"
-#include "debug.h"
+#include <io/cio.h>
+#include <debug.h>
 
 struct acpi_data {
 	struct acpi_rsdp* rsdp;

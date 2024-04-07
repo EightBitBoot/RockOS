@@ -336,10 +336,10 @@ $(SRC_DIR)/offsets.h: $(BUILD_DIR)/Offsets
 	$(BUILD_DIR)/Offsets -h $(SRC_DIR)/offsets.h
 
 $(BUILD_DIR)/BuildImage: BuildImage.c | $(BUILD_DIR)
-	$(CC) -o $(BUILD_DIR)/BuildImage $(SRC_DIR)/BuildImage.c
+	$(CC) -o $(BUILD_DIR)/BuildImage $(SRC_DIR)/prog/BuildImage.c
 
 $(BUILD_DIR)/Offsets: Offsets.c procs.h stacks.h queues.h common.h | $(BUILD_DIR)
-	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o $(BUILD_DIR)/Offsets $(SRC_DIR)/Offsets.c
+	$(CC) -mx32 -std=c99 $(INCLUDES) -I../framework -o $(BUILD_DIR)/Offsets $(SRC_DIR)/prog/Offsets.c
 
 $(BUILD_DIRS):
 	mkdir -p $@

@@ -157,9 +157,9 @@ enum prio_e {
 */
 
 #ifdef SP_KERNEL_SRC
-#include "kdefs.h"
+#include "kern/kdefs.h"
 #else
-#include "udefs.h"
+#include "usr/udefs.h"
 #endif
 
 #endif

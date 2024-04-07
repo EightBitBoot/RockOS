@@ -22,10 +22,10 @@
 // any includes of "local" headers should be done here
 #include "common.h"
 
-#include "queues.h"
-#include "procs.h"
-#include "sched.h"
-#include "kernel.h"
+#include "util/queues.h"
+#include "kern/procs.h"
+#include "kern/sched.h"
+#include "kern/kernel.h"
 
 /*
 ** Section 1:  sized integer types

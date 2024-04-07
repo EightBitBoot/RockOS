@@ -1,19 +1,22 @@
 /**
-** @file	debug.h
+** @file kdefs.h
 **
-** @author	Numerous CSCI-452 classes
+** @author Numerous CSCI-452 classes
 **
-** @brief	Debugging macros
+** Kernel-only definitions for the baseline system.
 **
 */
 
-#ifndef DEBUG_H_
-#define DEBUG_H_
+#ifndef KDEFS_H_
+#define KDEFS_H_
 
 // Standard system headers
 
 #include "io/cio.h"
 #include "kern/support.h"
+
+// Kernel library
+
 #include "libc/lib.h"
 
 #ifndef SP_ASM_SRC
@@ -21,6 +24,68 @@
 /*
 ** Start of C-only definitions
 */
+
+/*
+** Types
+*/
+
+// ----------------------------------------------------------
+// Status return values
+typedef int32_t status_t;
+
+// success!
+#define S_OK		0
+
+// generic failure
+#define S_ERR		(-1)
+
+// other failures
+#define S_NOMEM		(-2)
+#define S_EMPTY		(-3)
+#define S_NOTFOUND	(-4)
+
+/*
+** Macros and pseudo-functions
+*/
+
+// bit patterns for modulus checking of (e.g.) sizes and addresses
+
+#define MOD4_BITS        0x3
+#define MOD4_MASK        0xfffffffc
+
+#define MOD16_BITS       0xf
+#define MOD16_MASK       0xfffffff0
+
+/*
+** Utility macros
+*/
+
+//
+// macros to clear data structures
+//
+// these are usable for clearing single-valued data items (e.g.,
+// a PCB, a Queue, a QNode, etc.)
+#define CLEAR(v)        __memclr( &v, sizeof(v) )
+#define CLEAR_PTR(p)    __memclr( p, sizeof(*p) )
+
+// macros for access registers and system call arguments
+
+// REG(pcb,x) -- access a specific register in a process context
+#define REG(pcb,x)  ((pcb)->context->x)
+
+// RET(pcb) -- access return value register in a process context
+#define RET(pcb)    ((pcb)->context->eax)
+
+// ARG(pcb,n) -- access argument #n from the indicated process
+//
+// ARG(pcb,0) --> return address
+// ARG(pcb,1) --> first parameter
+// ARG(pcb,2) --> second parameter
+// etc.
+//
+// ASSUMES THE STANDARD 32-BIT ABI, WITH PARAMETERS PUSHED ONTO THE
+// STACK.  IF THE PARAMETER PASSING MECHANISM CHANGES, SO MUST THIS!
+#define ARG(pcb,n)  ( ( (uint32_t *) (((pcb)->context) + 1) ) [(n)] )
 
 /*
 ** Debugging and sanity-checking macros
@@ -38,9 +103,9 @@
 // n: severity level
 // m: message (condition, etc.)
 #define PANIC(n,m)  do { \
-        __sprint( b512, "ASSERT %s (%s @ %d), %d: %s\n", \
+        __sprint( _b512, "%s (%s @ %d), %d: %s\n", \
                   __func__, __FILE__, __LINE__, n, # m ); \
-        _kpanic( b512 ); \
+        _kpanic( _b512 ); \
     } while(0)
 
 /*
@@ -79,14 +144,19 @@
 #define assert4(x)  // do nothing
 
 #endif
-/* if SANITY > 0 */
+// SANITY > 0
 
 /*
 ** Tracing options are enabled by defining the TRACE macro in the
 ** Makefile.  The value of that macro is a bit mask.
 */
 
-#ifdef TRACE
+#ifndef TRACE
+// default trace level: trace nothing
+#define	TRACE	0
+#endif
+
+#if TRACE > 0
 
 // bits for selecting the thing(s) to be traced
 #define TRACE_PCB           0x0001
@@ -129,7 +199,7 @@
 
 #else
 
-// TRACE is undefined, so just define these all as "false"
+// TRACE == 0, so just define these all as "false"
 
 #define TRACING_PCB         0
 #define TRACING_STACK       0
@@ -154,6 +224,6 @@
 // TRACE
 
 #endif
-// !SP_ASM_SRC
+// SP_ASM_SRC
 
 #endif

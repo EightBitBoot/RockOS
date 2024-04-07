@@ -1,8 +1,7 @@
 Diagnostics:
-  Suppress: "pp_including_mainfile_in_preamble"
-  UnusedIncludes: None
+    Suppress: "pp_including_mainfile_in_preamble"
+    UnusedIncludes: None
 
 CompileFlags:
-    Add: [-std=c99, -nostdinc, -xc]
     Compiler: gcc
 
