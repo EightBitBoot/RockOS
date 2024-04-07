@@ -15,19 +15,78 @@
 #
 
 #
+# To connect to qemu over vnc run
+#     ssh -L 5900:localhost:5900
+#
+# in a seperate host terminal from the main one you are using
+# to run QRUN.  This connection can remain open over multiple
+# runs of QRUN.
+#
+# Then connect your vnc client to localhost:5900
+#
+
+#
 # QEMU binary location varies between systems
 #
 
 DSL=/usr/local/dcs/bin/qemu-system-i386
 MAIN=/home/course/csci352/bin/qemu-system-i386
 
-# exec $MAIN \
-	# -serial mon:stdio \
-    # -nographic \
-    # -vnc :0 \
-    # -curses \
-    # -monitor stdio \
-    # -display none \
-	# -drive file=disk.img,index=0,media=disk,format=raw
+read -d '' -r USAGE_MSG << E_USG_MSG
+Usage: $0 [options]
+    All flags are mutually exclusive except -h
 
-exec $MAIN -nographic -curses -drive file=build/disk.img,index=0,media=disk,format=raw
+    -c: Console: display vga text mode output via curses; Default
+    -s: Serial: display serial output to the terminal and open a vnc server for graphical (vga) output
+    -g: Graphical: display serial output and open a graphical window for graphical (vga) output
+    -h: Display this message and exit
+E_USG_MSG
+
+display_help() {
+    echo -e "$USAGE_MSG"
+    exit 0
+}
+
+CONSOLE=0
+SERIAL=0
+GRAPHICAL=0
+
+while getopts 'csgh' opt; do
+    case $opt in
+        c)
+            CONSOLE=1
+            ;;
+
+        s)
+            SERIAL=1
+            ;;
+
+        g)
+            GRAPHICAL=1
+            ;;
+
+        h|:|?)
+            display_help
+            ;;
+    esac
+done
+
+if ! (( $CONSOLE | $SERIAL | $GRAPHICAL )); then
+    echo None
+    CONSOLE=1
+fi
+
+if ! (( $CONSOLE ^ $SERIAL ^ $GRAPHICAL )) || (( $CONSOLE & $SERIAL & GRAPHICAL )); then
+    [[ $CONSOLE = 1 ]] && CON_MSG="-c, "
+    [[ $SERIAL = 1 ]] && SER_MSG="-s, "
+    [[ $GRAPHICAL = 1 ]] && GRA_MSG="-g"
+
+    echo -e "Error: ${CON_MSG}${SER_MSG}${GRA_MSG} are mutually exclusive"
+    display_help
+fi
+
+[[ $CONSOLE = 1 ]] && DISPLAY_CMD="-nographic -curses"
+[[ $SERIAL = 1 ]]  && DISPLAY_CMD="-nographic -vnc :0 -serial mon:stdio"
+[[ $GRAPHICAL = 1 ]] && DISPLAY_CMD="-serial mon:stdio"
+
+exec $MAIN $DISPLAY_CMD -drive file=build/disk.img,index=0,media=disk,format=raw
