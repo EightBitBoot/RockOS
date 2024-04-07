@@ -19,8 +19,10 @@
 BUILD_DIR = build
 DEP_DIR = $(BUILD_DIR)/dep
 OBJ_DIR = $(BUILD_DIR)/obj
+ASM_DIR = $(BUILD_DIR)/asm
+LST_DIR = $(BUILD_DIR)/lst
 
-BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR)
+BUILD_DIRS = $(BUILD_DIR) $(OBJ_DIR) $(DEP_DIR) $(ASM_DIR) $(LST_DIR)
 
 VPATH ::= $(subst " ",:,$(shell find . -type d))
 
@@ -233,7 +235,8 @@ LDFLAGS = -melf_i386 -no-pie
 # effect on the out of date status of any targets.
 #
 
-.SUFFIXES: .b .X .i
+.SUFFIXES: .X .i
+.PRECIOUS: $(ASM_DIR)/%.s
 
 .c.X:
 	$(CC) $(CFLAGS) -g -c -Wa,-adhln $*.c > $*.X
@@ -241,18 +244,17 @@ LDFLAGS = -melf_i386 -no-pie
 .c.s:
 	$(CC) $(CFLAGS) -S $*.c
 
-# TODO(Adin): Move the generated files to a new directory
-%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR)
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $*.s $*.S
+$(ASM_DIR)/%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(ASM_DIR)
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $@ $<
 
-$(OBJ_DIR)/%.o: offsets.h %.S $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $*.s $*.S
-	$(AS) $(ASFLAGS) -o $@ $*.s -a=$*.lst
-	$(RM) -f $*.s
+$(OBJ_DIR)/%.o: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR) $(ASM_DIR) $(LST_DIR)
+	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $*.S
+	$(AS) $(ASFLAGS) -o $@ $(ASM_DIR)/$*.s -a=$(LST_DIR)/$*.lst
+#   $(RM) -f $*.s
 
-.s.b:
-	$(AS) $(ASFLAGS) -o $*.o $*.s -a=$*.lst
-	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $*.o
+$(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR)
+	$(AS) $(ASFLAGS) -o $(OBJ_DIR)/$*.o $< -a=$(LST_DIR)/$*.lst
+	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $*.b $(OBJ_DIR)/$*.o
 
 $(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
 	$(CC) $(DEPFLAGS) $(CFLAGS) -c -o $@ $<
@@ -275,7 +277,7 @@ $(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
 # Default target:  disk.img
 #
 
-disk.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis
+disk.img: offsets.h $(BIN_DIR)/bootstrap.b prog.b prog.nl BuildImage prog.dis
 	./BuildImage -d usb -o disk.img -b bootstrap.b prog.b 0x10000
 
 floppy.img: offsets.h bootstrap.b prog.b prog.nl BuildImage prog.dis
