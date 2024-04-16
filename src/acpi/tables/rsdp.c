@@ -1,6 +1,7 @@
 #include <acpi/acpi.h>
 #include <acpi/tables/rsdp.h>
 #include "lib.h"
+#include "cio.h"
 #include "debug.h"
 
 static void* _acpi_get_ebda_ptr(void) {
@@ -8,7 +9,7 @@ static void* _acpi_get_ebda_ptr(void) {
 
 	void *ret_ptr = (void *) (*ptr << 4);
 	if (ret_ptr < (void *) 0x80000 || ret_ptr > (void *) 0x9FFFF)
-		WARNING("[acpi] edba ptr is outside expected range");
+		_acpi_warn("EBDA ptr is outside expected range");
 
 	return ret_ptr;
 }
@@ -21,7 +22,7 @@ static bool_t _acpi_validate_rsdp(struct acpi_rsdp* rsdp) {
 	// ACPI 1.0 checks
 	if (!_acpi_checksum_valid((uint8_t *) rsdp, 0, 20)) {
 		// rsdp->checksum is a value to ensure the first 20 bytes sum to 0
-		WARNING("[acpi] RSDP checksum is invalid, ignoring");
+		_acpi_warn("RSDP checksum is invalid, ignoring");
 		return false;
 	}
 
@@ -32,7 +33,7 @@ static bool_t _acpi_validate_rsdp(struct acpi_rsdp* rsdp) {
 		// See ACPI Specification (v6.5) Section 5.2.5.3
 		if (!_acpi_checksum_valid((uint8_t *) rsdp, 0, sizeof(struct acpi_rsdp))) {
 			// rsdp->extended_checksum is a value to ensure all the bytes in the table sum to 0
-			WARNING("[acpi] RSDP extended checksum is invalid, ignoring");
+			_acpi_warn("RSDP extended checksum is invalid, ignoring");
 			// TODO: Just set revision to 0 since 1.0 table is fine?
 			return false;
 		}
@@ -41,7 +42,7 @@ static bool_t _acpi_validate_rsdp(struct acpi_rsdp* rsdp) {
 	// Invalid revision check
 	if (rsdp->revision == 1) {
 		// Not ACPI 1.0, not APCI 2.0, invalid
-		WARNING("[acpi] RSDP claims support for imaginary revision, ignoring");
+		_acpi_warn("RSDP claims support for imaginary revision, ignoring");
 		return false;
 	}
 

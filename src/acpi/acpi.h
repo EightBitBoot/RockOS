@@ -3,6 +3,22 @@
 
 #include "common.h"
 
+#define _acpi_warn(message) WARNING(message);
+
+#define _acpi_info(...) \
+	do { \
+		__cio_printf("[acpi][%s] ", __func__); \
+		__cio_printf(__VA_ARGS__); \
+		__cio_putchar('\n'); \
+	} while (0);
+
+#define ACPI_DEBUG
+#ifdef ACPI_DEBUG
+#define _acpi_dbg(...) _acpi_info(__VA_ARGS__);
+#else
+#define _acpi_dbg(...)
+#endif
+
 /**
  * @struct acpi_generic_address
  * @brief ACPI Generic Address Structure
