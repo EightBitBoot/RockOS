@@ -128,6 +128,37 @@ void __memcpy( void *dst, register const void *src,
 }
 
 /**
+** Name:        __memcmp
+**
+** Description: Compare two byte strings
+**
+** @param s1   The first byte string to examine
+** @param s2   The second byte string to examine
+** @param len  Length of byte strings to examine
+**
+** @return < 0 if s1 < s2; 0 if equal; > 0 if s1 > s2
+*/
+
+unsigned int __memcmp( register const void *s1, register const void *s2,
+               register unsigned int len ) {
+    register const unsigned char *b1 = s1;
+    register const unsigned char *b2 = s2;
+
+    while ( --len ) {
+        if (*b1 < *b2)
+            return -1;
+
+        if (*b1 > *b2)
+            return 1;
+
+        b1++;
+        b2++;
+    }
+
+    return 0;
+}
+
+/**
 ** Name:        __strlen
 **
 ** Description: Calculate the length of a C-style string.
