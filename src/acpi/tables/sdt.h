@@ -20,6 +20,7 @@ struct acpi_sdt_header {
 	uint32_t creator_revision;
 } __attribute__((packed));
 
+#define ACPI_SDT_ROOT32_SIGNATURE "RSDT"
 /**
  * @struct acpi_sdt_root32
  * @brief ACPI Root System Description Table
@@ -27,9 +28,10 @@ struct acpi_sdt_header {
  */
 struct acpi_sdt_root32 {
 	struct acpi_sdt_header header;
-	uint32_t *entry_addresses; // array size is header.length - sizeof(header)
+	uint32_t entry_addresses[1]; // array size is header.length - sizeof(header)
 } __attribute__((packed));
 
+#define ACPI_SDT_ROOT64_SIGNATURE "XSDT"
 /**
  * @struct acpi_sdt_root64
  * @brief ACPI Root System Description Table
@@ -37,7 +39,9 @@ struct acpi_sdt_root32 {
  */
 struct acpi_sdt_root64 {
 	struct acpi_sdt_header header;
-	uint64_t *entry_addresses; // array size is header.length - sizeof(header)
+	uint64_t entry_addresses[1]; // array size is header.length - sizeof(header)
 } __attribute__((packed));
+
+bool_t _acpi_validate_sdt(struct acpi_sdt_header *header);
 
 #endif

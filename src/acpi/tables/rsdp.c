@@ -1,5 +1,6 @@
 #include <acpi/acpi.h>
 #include <acpi/tables/rsdp.h>
+#include "lib.h"
 #include "debug.h"
 
 static void* _acpi_get_ebda_ptr(void) {
@@ -14,17 +15,8 @@ static void* _acpi_get_ebda_ptr(void) {
 
 static bool_t _acpi_validate_rsdp(struct acpi_rsdp* rsdp) {
 	// Verify valid signature
-	char *expected_signature = ACPI_RSDP_SIGNATURE;
-
-	int j;
-	for (j = 0; j < sizeof(expected_signature); j++) {
-		if (expected_signature[j] != rsdp->signature[j]) break;
-	}
-
-	if (j != sizeof(expected_signature)) {
-		// No output here, since this is called in a loop
+	if (__memcmp(rsdp->signature, ACPI_RSDP_SIGNATURE, sizeof(ACPI_RSDP_SIGNATURE)) != 0)
 		return false;
-	}
 
 	// ACPI 1.0 checks
 	if (!_acpi_checksum_valid((uint8_t *) rsdp, 0, 20)) {
