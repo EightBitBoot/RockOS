@@ -2,6 +2,7 @@
 #include <acpi/tables/rsdp.h>
 #include <acpi/tables/sdt.h>
 #include <acpi/tables/fadt.h>
+#include <acpi/tables/dsdt.h>
 #include "support.h"
 #include "lib.h"
 #include <io/cio.h>
@@ -14,7 +15,8 @@ struct acpi_data {
 	struct acpi_sdt_root64 *xsdt;
 
 	struct acpi_fadt *fadt;
-	// TODO: how to load and store AML coded tables dynamically?
+	// TODO: how to parse AML coded tables dynamically?
+	struct acpi_dsdt *dsdt;
 };
 static struct acpi_data _acpi_data = {0};
 
@@ -99,12 +101,51 @@ static bool_t _acpi_locate_sdts(void) {
 		} else {
 			_acpi_dbg("SDT (%02d/%02d) @0x%-08x invalid! ignoring.", (i+1), num_entries, entry);
 		}
-
-		__delay(25);
 	}
 
 	// Return error on missing required table
 	return (_acpi_data.fadt != NULL);
+}
+
+// Assumes FADT is valid.
+static bool_t _acpi_parse_dsdt(struct acpi_dsdt *dsdt) {
+	if (dsdt == NULL) return false;
+
+	// DSDT checksum
+	if (!_acpi_validate_sdt(&dsdt->header)) {
+		_acpi_warn("DSDT checksum invalid");
+		return false;
+	}
+
+	// Signature
+	if (__memcmp(dsdt->header.signature, ACPI_DSDT_SIGNATURE, sizeof(ACPI_DSDT_SIGNATURE)) != 0) {
+		_acpi_warn("DSDT invalid signature");
+		return false;
+	}
+
+	_acpi_data.dsdt = dsdt;
+	_acpi_dbg("DSDT @0x%x", _acpi_data.dsdt);
+
+	char *dsdt_ptr = _acpi_data.dsdt->definition_block;
+	while (true) {
+		__cio_putchar(*(dsdt_ptr++));
+		__delay(5);
+	}
+
+	return true;
+}
+
+static bool_t _acpi_enable(void) {
+	// See: ACPI Specification (v6.5) Section 16.3.1
+	if ((__inw(_acpi_data.fadt->pm1a_cnt_blk) & 1) == 0) {
+		_acpi_dbg("Issuing ACPI enable command. Waiting for transition to ACPI mode...");
+		__outb(_acpi_data.fadt->smi_cmd, _acpi_data.fadt->acpi_enable);
+	}
+
+	// TODO: Give up after a while?
+	while ((__inw(_acpi_data.fadt->pm1a_cnt_blk) & 1) == 0);
+
+	return true;
 }
 
 void _acpi_init(void) {
@@ -127,9 +168,29 @@ void _acpi_init(void) {
 		return;
 	}
 
-	// TODO: Register APCI syscalls before enabling
+	// Parse DSDT
+	_acpi_dbg("Trying extended DSDT address");
+	if (!_acpi_parse_dsdt((struct acpi_dsdt *) _acpi_data.fadt->x_dsdt)) {
+		// TODO: This fails. Is the DSDT definition wrong?
+		_acpi_info("Failed to parse extended DSDT.");
+	}
 
-	// TODO: ACPI enable (section 16.3.1)
+	if (_acpi_data.dsdt == NULL) {
+		_acpi_dbg("Trying regular DSDT address");
+		if (!_acpi_parse_dsdt((struct acpi_dsdt *) _acpi_data.fadt->dsdt)) {
+			_acpi_info("Failed to parse regular DSDT. Initialization failed.");
+			return;
+		}
+	}
+
+	// Transition from legacy to APCI mode
+	if (!_acpi_enable()) {
+		_acpi_info("Failed to transition from legacy mode to ACPI mode. Initialization failed.");
+		return;
+	}
+	_acpi_info("ACPI mode enabled");
+
+	// TODO: ACPI interrupts + enable them?
 
 	// TODO: syscalls for changing sleep state (shutdown/reboot/reset/sleep/etc.)
 
