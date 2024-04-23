@@ -7,13 +7,13 @@
  * @sa ACPI Specification (v6.5) Section 5.2.9.3
  */
 struct acpi_fadt_iapc {
-	uint8_t legacy_devices;
-	uint8_t _8042;
-	uint8_t vga_not_present;
-	uint8_t msi_not_supported;
-	uint8_t pcie_aspm_controls;
-	uint8_t cmos_rtc_not_present;
-	uint8_t reserved[10];
+	uint8_t legacy_devices : 1;
+	uint8_t _8042 : 1;
+	uint8_t vga_not_present : 1;
+	uint8_t msi_not_supported : 1;
+	uint8_t pcie_aspm_controls : 1;
+	uint8_t cmos_rtc_not_present : 1;
+	uint16_t reserved : 10;
 } __attribute__((packed));
 
 /**
@@ -22,9 +22,9 @@ struct acpi_fadt_iapc {
  * @sa ACPI Specification (v6.5) Section 5.2.9.4
  */
 struct acpi_fadt_arm {
-	uint8_t psci_compliant;
-	uint8_t psci_use_hvc;
-	uint8_t reserved[14];
+	uint8_t psci_compliant : 1;
+	uint8_t psci_use_hvc : 1;
+	uint16_t reserved : 14;
 } __attribute__((packed));
 
 #define ACPI_FADT_SIGNATURE "FACP"

@@ -148,6 +148,47 @@ static bool_t _acpi_enable(void) {
 	return true;
 }
 
+void _acpi_command(enum _acpi_commands cmd) {
+	// TODO: Validate assumptions (_acpi_data setup, etc)
+	switch (cmd) {
+		case ACPI_COMMAND_SHUTDOWN:
+			_acpi_info("shutting down");
+			break;
+		case ACPI_COMMAND_REBOOT:
+			_acpi_info("rebooting");
+			if (_acpi_data.fadt->header.revision < 2) {
+				_acpi_dbg("FADT version %u does not support reset register!", _acpi_data.fadt->header.revision);
+				// TODO: crash the system in another way
+			}
+
+			_acpi_dbg("Reset! ID 0x%x ADDR 0x%x VAL 0x%x", _acpi_data.fadt->reset_reg.addr_space_id, _acpi_data.fadt->reset_reg.addr, _acpi_data.fadt->reset_value);
+			switch (_acpi_data.fadt->reset_reg.addr_space_id) {
+				case ACPI_ADDR_SPACE_SYSTEM_MEM:
+					_acpi_dbg("Issuing reset via system memory");
+					*((uint8_t *) _acpi_data.fadt->reset_reg.addr) = _acpi_data.fadt->reset_value;
+					break;
+				case ACPI_ADDR_SPACE_SYSTEM_IO:
+					_acpi_dbg("Issuing reset via system IO");
+					// TODO: Test. The lab computers use SYSTEM_MEM
+					__outb(_acpi_data.fadt->reset_reg.addr, _acpi_data.fadt->reset_value);
+					break;
+				case ACPI_ADDR_SPACE_PCI_CONFIG:
+					_acpi_dbg("Issuing reset via PCI configuration");
+					// TODO
+					break;
+				default:
+					_acpi_info("Invalid address space ID %u for FADT reset", _acpi_data.fadt->reset_reg.addr_space_id);
+			}
+
+			// OSPM should execute spin loops on all CPUs once writing reset register.
+			while(true);
+
+			break;
+		default:
+			_acpi_info("Invalid command sent to syscall: %u", cmd);
+	}
+}
+
 void _acpi_init(void) {
 	_acpi_info("Initializing");
 

@@ -25,6 +25,7 @@
 #include "io/cio.h"
 #include "io/sio.h"
 #include "io/vgatext.h"
+#include "acpi/acpi.h"
 
 /*
 ** PRIVATE DEFINITIONS
@@ -719,6 +720,13 @@ SYSIMPL(vgatextsetactivecolor)
 	__vga_text_set_active_color(ARG(_current,1));
 }
 
+// See acpi/acpi.h
+SYSIMPL(acpicommand)
+{
+	enum _acpi_commands cmd = ARG(_current, 1);
+	_acpi_command(cmd);
+}
+
 // The system call jump table
 //
 // Initialized using designated initializers to ensure the entries
@@ -740,6 +748,7 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_vgatextclear ]          = _sys_vgatextclear,
 	[ SYS_vgatextgetactivecolor ] = _sys_vgatextgetactivecolor,
 	[ SYS_vgatextsetactivecolor ] = _sys_vgatextsetactivecolor,
+	[ SYS_acpicommand ]           = _sys_acpicommand,
 };
 
 /**

@@ -36,9 +36,10 @@
 #define SYS_vgatextclear          10
 #define SYS_vgatextgetactivecolor 11
 #define SYS_vgatextsetactivecolor 12
+#define SYS_acpicommand 13
 
 // UPDATE THIS DEFINITION IF MORE SYSCALLS ARE ADDED!
-#define N_SYSCALLS      13
+#define N_SYSCALLS      14
 
 // dummy system call code for testing our ISR
 #define SYS_bogus       0xbad
