@@ -39,6 +39,7 @@ Usage: $0 [options]
     -c: Console: display vga text mode output via curses; Default
     -s: Serial: display serial output to the terminal and open a vnc server for graphical (vga) output
     -g: Graphical: display serial output and open a graphical window for graphical (vga) output
+    -d: Debug: enable qemu gdb server and wait to start machine until gdb instructs qemu to do so
     -h: Display this message and exit
 E_USG_MSG
 
@@ -50,8 +51,9 @@ display_help() {
 CONSOLE=0
 SERIAL=0
 GRAPHICAL=0
+DEBUG=0
 
-while getopts 'csgh' opt; do
+while getopts 'csghd' opt; do
     case $opt in
         c)
             CONSOLE=1
@@ -63,6 +65,9 @@ while getopts 'csgh' opt; do
 
         g)
             GRAPHICAL=1
+            ;;
+        d)
+            DEBUG=1
             ;;
 
         h|:|?)
@@ -89,4 +94,6 @@ fi
 [[ $SERIAL = 1 ]]  && DISPLAY_CMD="-nographic -vnc :0 -serial mon:stdio"
 [[ $GRAPHICAL = 1 ]] && DISPLAY_CMD="-serial mon:stdio"
 
-exec $MAIN $DISPLAY_CMD -drive file=build/disk.img,index=0,media=disk,format=raw
+[[ $DEBUG = 1 ]] && DEBUG_CMD="-s -S"
+
+exec $MAIN $DEBUG_CMD $DISPLAY_CMD -drive file=build/disk.img,index=0,media=disk,format=raw

@@ -107,7 +107,7 @@ DEPENDENCIES = $(OBJECTS:$(OBJ_DIR)/%.o=$(DEP_DIR)/%.d)
 # is missing, has no rule to be built, and therefore the entire
 # pattern rule is skipped.  Instead make uses a builtin, default
 # implicit rule (along the lines of to .S.s) which doesn't include
-# $(DEPFLAGS) and therefore doesn't build the dependency file.
+# $(DEP_FLAGS) and therefore doesn't build the dependency file.
 #
 # TODO(Adin): Add an explicit rule for bootstrap.b (a la prog.b)
 # and change bootstrap to be built as a regular object file (.o)
@@ -183,18 +183,20 @@ INCLUDES = -I$(SRC_DIR)
 #
 # Compilation/assembly/linking commands and options
 #
+DBG_FLAGS = -g
+DEP_FLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.d
+
 CPP = cpp
-CPPFLAGS = $(USER_OPTIONS) -nostdinc $(INCLUDES)
+CPPFLAGS = $(DBG_FLAGS) $(USER_OPTIONS) -nostdinc $(INCLUDES)
 
 #
 # Compiler/assembler/etc. settings for 32-bit binaries
 #
 CC = gcc
 CFLAGS = -m32 -fno-pie -std=c99 -fno-stack-protector -fno-builtin -Wall -Wstrict-prototypes $(CPPFLAGS) $(EXTRAS)
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.d
 
 AS = as
-ASFLAGS = --32
+ASFLAGS = $(DBG_FLAGS) --32
 
 LD = ld
 LDFLAGS = -melf_i386 -no-pie
@@ -249,10 +251,10 @@ LDFLAGS = -melf_i386 -no-pie
 	$(CC) $(CFLAGS) -S $*.c
 
 $(ASM_DIR)/%.s: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(ASM_DIR)
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CPP) $(DEP_FLAGS) $(CPPFLAGS) -o $@ $<
 
 $(OBJ_DIR)/%.o: %.S offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR) $(ASM_DIR) $(LST_DIR)
-	$(CPP) $(DEPFLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $<
+	$(CPP) $(DEP_FLAGS) $(CPPFLAGS) -o $(ASM_DIR)/$*.s $<
 	$(AS) $(ASFLAGS) -o $@ $(ASM_DIR)/$*.s -a=$(LST_DIR)/$*.lst
 
 $(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR) $(BIN_DIR)
@@ -260,7 +262,7 @@ $(BIN_DIR)/%.b: $(ASM_DIR)/%.s | $(LST_DIR) $(OBJ_DIR) $(BIN_DIR)
 	$(LD) $(LDFLAGS) -Ttext 0x0 -s --oformat binary -e begtext -o $@ $(OBJ_DIR)/$*.o
 
 $(OBJ_DIR)/%.o: %.c offsets.h $(DEP_DIR)/%.d | $(DEP_DIR) $(OBJ_DIR)
-	$(CC) $(DEPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(DEP_FLAGS) $(CFLAGS) -c -o $@ $<
 
 .c.i:
 	$(CC) -E $(CFLAGS) -c $*.c > $*.i
