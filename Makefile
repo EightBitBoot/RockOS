@@ -36,14 +36,14 @@ VPATH ::= $(subst " ",:,$(shell find $(SRC_DIR) -type d))
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c  \
 	   	   syscalls.c vgatext.c acpi/acpi.c acpi/aml.c acpi/checksum.c      \
 		   acpi/tables/rsdp.c acpi/tables/sdt.c vga.c vgaconst.c 						    \
-		   util/kstring.c
+		   util/kstring.c util/slab_cache.c
 
 OS_S_SRC =
 
 OS_HDRS  = clock.h common.h compat.h kdefs.h kernel.h kmem.h offsets.h \
 	   	   params.h procs.h queues.h sched.h sio.h stacks.h syscalls.h \
 	   	   vgatext.h acpi/acpi.h vga.h 									   \
-		   util/kstring.h
+		   util/kstring.h util/slab_cache.h
 
 OS_LIBS =
 
