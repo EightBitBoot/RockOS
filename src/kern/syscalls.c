@@ -727,6 +727,34 @@ SYSIMPL(acpicommand)
 	_acpi_command(cmd);
 }
 
+/**
+** _sys_vgatextgetblinkenabled - get whether blink is enabled in VGA Text Mode
+**
+** implements:
+**		unsigned int vgatextgetblinkenabled( void );
+**
+** returns:
+**		0 if blink is disabled in VGA Text Mode
+*/
+SYSIMPL(vgatextgetblinkenabled)
+{
+	RET(_current) = __vga_text_get_blink_enabled();
+}
+
+/**
+** _sys_vgatextsetblinkenabled - set whether blink is enabled in VGA Text Mode
+**
+** implements:
+** 		void vgatextsetblinkenabled( unsigned int blink_enabled );
+**
+** returns:
+** 		only on failure
+*/
+SYSIMPL(vgatextsetblinkenabled)
+{
+	__vga_text_set_blink_enabled(ARG(_current,1));
+}
+
 // The system call jump table
 //
 // Initialized using designated initializers to ensure the entries
@@ -735,20 +763,22 @@ SYSIMPL(acpicommand)
 // position in the initialization list is irrelevant.
 
 static void (* const _syscalls[N_SYSCALLS])( void ) = {
-	[ SYS_exit    ]               = _sys_exit,
-	[ SYS_sleep   ]               = _sys_sleep,
-	[ SYS_read    ]               = _sys_read,
-	[ SYS_write   ]               = _sys_write,
-	[ SYS_waitpid ]               = _sys_waitpid,
-	[ SYS_getdata ]               = _sys_getdata,
-	[ SYS_setdata ]               = _sys_setdata,
-	[ SYS_kill    ]               = _sys_kill,
-	[ SYS_fork    ]               = _sys_fork,
-	[ SYS_exec    ]               = _sys_exec,
-	[ SYS_vgatextclear ]          = _sys_vgatextclear,
-	[ SYS_vgatextgetactivecolor ] = _sys_vgatextgetactivecolor,
-	[ SYS_vgatextsetactivecolor ] = _sys_vgatextsetactivecolor,
-	[ SYS_acpicommand ]           = _sys_acpicommand,
+	[ SYS_exit    ]                = _sys_exit,
+	[ SYS_sleep   ]                = _sys_sleep,
+	[ SYS_read    ]                = _sys_read,
+	[ SYS_write   ]                = _sys_write,
+	[ SYS_waitpid ]                = _sys_waitpid,
+	[ SYS_getdata ]                = _sys_getdata,
+	[ SYS_setdata ]                = _sys_setdata,
+	[ SYS_kill    ]                = _sys_kill,
+	[ SYS_fork    ]                = _sys_fork,
+	[ SYS_exec    ]                = _sys_exec,
+	[ SYS_vgatextclear ]           = _sys_vgatextclear,
+	[ SYS_vgatextgetactivecolor ]  = _sys_vgatextgetactivecolor,
+	[ SYS_vgatextsetactivecolor ]  = _sys_vgatextsetactivecolor,
+	[ SYS_acpicommand ]            = _sys_acpicommand,
+	[ SYS_vgatextgetblinkenabled ] = _sys_vgatextgetblinkenabled,
+	[ SYS_vgatextsetblinkenabled ] = _sys_vgatextsetblinkenabled
 };
 
 /**

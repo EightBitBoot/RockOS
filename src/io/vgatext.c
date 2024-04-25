@@ -233,13 +233,26 @@ void __vga_text_set_active_color( unsigned int vga_text_color ) {
     active_color = vga_text_color;
 }
 
+unsigned int __vga_text_get_blink_enabled() {
+    uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
+    return (attr_mode_ctl & 0b00001000) == 0;
+}
+
+void __vga_text_set_blink_enabled(unsigned int blink_enabled) {
+    uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
+    if (blink_enabled) {
+        _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11110111);
+    } else {
+        _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl | 0b00001000);   
+    }
+}
+
 void __vga_text_init( void ) {
     // Set to Default Color Byte to finish Initialization
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
 
 void __vga_text_color_test( unsigned int kb_val ) {
-    uint8_t attr_mode_ctl;
     switch (kb_val) {
         case 0x60: // Backtick
             active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
@@ -380,11 +393,10 @@ void __vga_text_color_test( unsigned int kb_val ) {
             break;
         case 0x2f: // /
             // Disable Blink to gain more Background Colors
-            attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
-            if ((attr_mode_ctl & 0b00001000) == 0) {
-                _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl | 0b00001000);
+            if (__vga_text_get_blink_enabled()) {
+                __vga_text_set_blink_enabled(0);
             } else {
-                _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11110111);
+                __vga_text_set_blink_enabled(1);
             }
             
             break;

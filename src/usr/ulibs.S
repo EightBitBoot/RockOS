@@ -50,6 +50,8 @@ SYSCALL(exec)
 SYSCALL(vgatextclear)
 SYSCALL(vgatextgetactivecolor)
 SYSCALL(vgatextsetactivecolor)
+SYSCALL(vgatextgetblinkenabled)
+SYSCALL(vgatextsetblinkenabled)
 
 /*
 ** This is a bogus system call; it's here so that we can test

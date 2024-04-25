@@ -45,6 +45,8 @@ unsigned int ansi_color_to_vga_color(unsigned int ansi_color);
 // System Calls
 unsigned int __vga_text_get_active_color(void);
 void __vga_text_set_active_color(unsigned int vga_text_color);
+unsigned int __vga_text_get_blink_enabled(void);
+void __vga_text_set_blink_enabled(unsigned int blink_enabled);
 
 // Initialization Function
 void __vga_text_init(void);
