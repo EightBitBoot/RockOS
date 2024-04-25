@@ -381,7 +381,7 @@ void __vga_text_color_test( unsigned int kb_val ) {
         case 0x2f: // /
             // Disable Blink to gain more Background Colors
             attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
-            // _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11110111);
+            _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11110111);
             break;
         default:
 	        __cio_printf( "** CIO kbd data val 0x%02x\n", (unsigned int) kb_val );

@@ -28,7 +28,7 @@ uint8_t _vga_attr_read(unsigned int index) {
     _reset_flipflop();
     char buf[256];
     int orig_index = __inb(VGA_ATTR_ADDR_REG_RW);
-    int mod_index = (orig_index & 0b11100000) | index;
+    int mod_index = (orig_index & 0b11100000) | (index & 0b00011111);
     __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
     // Save current value of Address/Data Register
     uint8_t retval = (uint8_t) __inb(VGA_ATTR_ADDR_REG_DATA_RO);
@@ -48,12 +48,11 @@ void _vga_attr_write(unsigned int index, uint8_t data) {
     char buf[256];
     sprint(buf, "vaw i: 0x%x, d: 0x%x, o: 0x%x\n", index, data, orig_index);
     _sio_puts(buf);
-    int mod_index = orig_index & 0b11100000;
-    mod_index |= (index & 0b00011111);
+    int mod_index = (orig_index & 0b11100000) | (index & 0b00011111);
     sprint(buf, "vaw: mi: 0x%x\n", mod_index);
     _sio_puts(buf);
     _reset_flipflop();
-    // __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
-    // __outb(VGA_ATTR_ADDR_REG_RW, data);
+    __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
+    __outb(VGA_ATTR_ADDR_REG_RW, data);
     _reset_flipflop();
 }
