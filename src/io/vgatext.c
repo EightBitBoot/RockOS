@@ -1,5 +1,7 @@
+#include "vga.h"
 #include "vgatext.h"
 #include "cio.h"
+#include "common.h"
 
 unsigned int vga_text_fg (unsigned int c) {
     return (c & 0x0F) << 8; //Ensure color is free of extra bits, bitshift to foreground
@@ -237,6 +239,7 @@ void __vga_text_init( void ) {
 }
 
 void __vga_text_color_test( unsigned int kb_val ) {
+    uint8_t attr_mode_ctl;
     switch (kb_val) {
         case 0x60: // Backtick
             active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
@@ -375,6 +378,13 @@ void __vga_text_color_test( unsigned int kb_val ) {
             active_color = vga_text_bg(VGA_TEXT_COLOR_BG_BLINK_GRAY);
             __cio_printf("[VGA] text color test: (b) gray background blink text\n");
             break;
+        case 0x2f: // /
+            // Disable Blink to gain more Background Colors
+            attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
+            // _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11110111);
+            break;
+        default:
+	        __cio_printf( "** CIO kbd data val 0x%02x\n", (unsigned int) kb_val );
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
