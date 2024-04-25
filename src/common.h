@@ -152,6 +152,21 @@ enum prio_e {
     N_PRIOS
 };
 
+// ----------------------------------------------------------
+// Just VFS Things
+typedef uint32_t inum_t;
+
+// NOTE(Adin): This is here because it is used by _both_ userspace
+// 			   and kernelspace (when returning from listdir())
+
+#define VFS_NAME_MAX 255
+
+// TODO(Adin): Make this better
+typedef struct adinfs_dent
+{
+	char name[VFS_NAME_MAX];
+} adinfs_dent_t;
+
 /*
 ** Additional OS-only or user-only things
 */
