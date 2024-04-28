@@ -76,7 +76,7 @@ if ! (( $CONSOLE | $SERIAL | $GRAPHICAL )); then
     CONSOLE=1
 fi
 
-if ! (( $CONSOLE ^ $SERIAL ^ $GRAPHICAL )) || (( $CONSOLE & $SERIAL & GRAPHICAL )); then
+if ! (( $CONSOLE ^ $SERIAL ^ $GRAPHICAL )) || (( $CONSOLE & $SERIAL & $GRAPHICAL )); then
     [[ $CONSOLE = 1 ]] && CON_MSG="-c, "
     [[ $SERIAL = 1 ]] && SER_MSG="-s, "
     [[ $GRAPHICAL = 1 ]] && GRA_MSG="-g"
