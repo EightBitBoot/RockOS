@@ -51,5 +51,5 @@ void __vga_text_set_blink_enabled(unsigned int blink_enabled);
 // Initialization Function
 void __vga_text_init(void);
 // Test Function
-void __vga_text_color_test( unsigned int kb_val );
+void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val );
 #endif

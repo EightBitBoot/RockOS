@@ -12,6 +12,7 @@
 // http://www.osdever.net/FreeVGA/vga/attrreg.htm
 // http://www.osdever.net/FreeVGA/vga/vga.htm
 // http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
+// https://fd.lod.bz/rbil/ports/video/p03c003c1.html
 
 void _reset_flipflop() {
     // Read Input Status #1 to set FlipFlop to Index
@@ -46,13 +47,37 @@ void _vga_attr_write(unsigned int index, uint8_t data) {
     _reset_flipflop();
     int orig_index = __inb(VGA_ATTR_ADDR_REG_RW);
     char buf[256];
-    sprint(buf, "vaw i: 0x%x, d: 0x%x, o: 0x%x\n", index, data, orig_index);
+    sprint(buf, "vaw i: 0x%x, d: 0x%x, o: 0x%x\r\n", index, data, orig_index);
     _sio_puts(buf);
     int mod_index = (orig_index & 0b11100000) | (index & 0b00011111);
-    sprint(buf, "vaw: mi: 0x%x\n", mod_index);
+    sprint(buf, "vaw: mi: 0x%x\r\n", mod_index);
     _sio_puts(buf);
     _reset_flipflop();
     __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
     __outb(VGA_ATTR_ADDR_REG_RW, data);
     _reset_flipflop();
+}
+
+/**
+ * Get whether VGA is in Text or Graphics Mode
+ * Returns 0 if Text Mode
+ * Returns 1 if Graphics Mode
+*/
+unsigned int _vga_get_graphics_text_select() {
+    uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
+    return attr_mode_ctl & 0b00000001;
+}
+
+/**
+ * Set whether VGA is in Text or Graphics Mode
+ * 0 sets Text Mode
+ * 1 sets Graphics Mode
+*/
+void _vga_set_graphics_text_select(unsigned int graphics_text_select) {
+    uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
+    if (graphics_text_select) {
+        _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl & 0b11111110);
+    } else {
+        _vga_attr_write(VGA_ATTR_MODE_CTL, attr_mode_ctl | 0b00000001);   
+    }
 }

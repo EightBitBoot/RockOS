@@ -45,4 +45,8 @@ uint8_t _vga_attr_read(unsigned int index);
 
 void _vga_attr_write(unsigned int index, uint8_t data);
 
+unsigned int _vga_get_graphics_text_select(void);
+
+void _vga_set_graphics_text_select(unsigned int graphics_text_select);
+
 #endif

@@ -252,7 +252,7 @@ void __vga_text_init( void ) {
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
 
-void __vga_text_color_test( unsigned int kb_val ) {
+void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
     switch (kb_val) {
         case 0x60: // Backtick
             active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
@@ -398,10 +398,15 @@ void __vga_text_color_test( unsigned int kb_val ) {
             } else {
                 __vga_text_set_blink_enabled(1);
             }
-            
             break;
-        default:
-	        __cio_printf( "** CIO kbd data val 0x%02x\n", (unsigned int) kb_val );
+        case 0x2e: // .
+            // Enter 16 Color Graphics Mode
+            if (_vga_get_graphics_text_select()) {
+                _vga_set_graphics_text_select(1);
+            } else {
+                _vga_set_graphics_text_select(0);
+            }
+            break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
