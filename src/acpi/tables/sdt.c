@@ -1,7 +1,7 @@
 #include <acpi/acpi.h>
 #include <acpi/tables/sdt.h>
-#include "cio.h"
-#include "debug.h"
+#include <io/cio.h>
+#include <debug.h>
 
 bool_t _acpi_validate_sdt(struct acpi_sdt_header *header) {
 	if (header == NULL) return false;

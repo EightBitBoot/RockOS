@@ -116,3 +116,39 @@ struct acpi_fadt {
 	uint16_t persistent_cpu_caches;
 	uint64_t reserved3;
 } __attribute__((packed));
+
+/**
+ * @struct acpi_pm1_sts_register
+ * @brief PM1 Status Register
+ * @sa ACPI Specification (v6.5) Section 4.8.3.1.1
+ */
+struct acpi_pm1_sts_register {
+	uint8_t tmr_sts:1;
+	uint8_t reserved1:3;
+	uint8_t bm_sts:1;
+	uint8_t gbl_sts:1;
+	uint8_t reserved2:2;
+	uint8_t pwrbtn_sts:1;
+	uint8_t slpbtn_sts:1;
+	uint8_t rtc_sts:1;
+	uint8_t ignore:1;
+	uint8_t reserved3:2;
+	uint8_t pciexp_wake_sts:1;
+	uint8_t wak_sts:1;
+} __attribute__((packed));
+
+/**
+ * @struct acpi_pm1_cnt_register
+ * @brief PM1 Control Register
+ * @sa ACPI Specification (v6.5) Section 4.8.3.2.1
+ */
+struct acpi_pm1_cnt_register {
+	uint8_t sci_en:1;
+	uint8_t bm_rld:1;
+	uint8_t gbl_rls:1;
+	uint8_t reserved1:6;
+	uint8_t ignore:1;
+	uint8_t SLP_TYPx:3;
+	uint8_t slp_en:1;
+	uint8_t reserved2:2;
+} __attribute__((packed));

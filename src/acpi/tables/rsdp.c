@@ -1,8 +1,8 @@
 #include <acpi/acpi.h>
 #include <acpi/tables/rsdp.h>
-#include "lib.h"
-#include "cio.h"
-#include "debug.h"
+#include <libc/lib.h>
+#include <io/cio.h>
+#include <debug.h>
 
 static void* _acpi_get_ebda_ptr(void) {
 	uint16_t *ptr = (uint16_t *) 0x40E;

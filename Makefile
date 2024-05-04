@@ -34,7 +34,8 @@ VPATH ::= $(subst " ",:,$(shell find $(SRC_DIR) -type d))
 #
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
-	   	   syscalls.c vgatext.c acpi/acpi.c acpi/checksum.c acpi/tables/rsdp.c
+	   syscalls.c vgatext.c acpi/acpi.c acpi/aml.c acpi/checksum.c \
+	   acpi/tables/rsdp.c acpi/tables/sdt.c
 
 OS_S_SRC =
 
@@ -315,7 +316,7 @@ floppy: floppy.img
 	dd if=floppy.img of=/dev/fd0
 
 usb: disk.img
-	/usr/local/dcs/bin/dcopy disk.img
+	/usr/local/dcs/bin/dcopy $(BUILD_DIR)/disk.img
 
 #
 # Special rule for creating the modification and offset programs

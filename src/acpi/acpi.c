@@ -1,10 +1,11 @@
 #include <acpi/acpi.h>
+#include <acpi/aml.h>
 #include <acpi/tables/rsdp.h>
 #include <acpi/tables/sdt.h>
 #include <acpi/tables/fadt.h>
 #include <acpi/tables/dsdt.h>
-#include "support.h"
-#include "lib.h"
+#include <kern/support.h>
+#include <libc/lib.h>
 #include <io/cio.h>
 #include <debug.h>
 
@@ -126,11 +127,9 @@ static bool_t _acpi_parse_dsdt(struct acpi_dsdt *dsdt) {
 	_acpi_data.dsdt = dsdt;
 	_acpi_dbg("DSDT @0x%x", _acpi_data.dsdt);
 
-	char *dsdt_ptr = _acpi_data.dsdt->definition_block;
-	while (true) {
-		__cio_putchar(*(dsdt_ptr++));
-		__delay(5);
-	}
+	uint8_t *aml = _acpi_data.dsdt->definition_block;
+	uint32_t aml_len = _acpi_data.dsdt->header.length - sizeof(_acpi_data.dsdt->header);
+	_acpi_aml_find_value(aml, aml_len, "_S5_");
 
 	return true;
 }
@@ -152,7 +151,36 @@ void _acpi_command(enum _acpi_commands cmd) {
 	// TODO: Validate assumptions (_acpi_data setup, etc)
 	switch (cmd) {
 		case ACPI_COMMAND_SHUTDOWN:
+			// See: ACPI Specification (v6.5) Section 16.1.6
 			_acpi_info("shutting down");
+
+			// TODO: _TTS(S5).
+			// Note: The motherboard in the lab does not provide _TTS, likely added in a more recent standard.
+
+			// TODO: _PTS
+
+			// TODO: Writes the waking vector into the FACS table in memory.
+			// Note: This operating system is not configured to wake, so we don't need to provide a vector.
+
+			// If not a HW-reduced ACPI platform, OSPM clears the WAK_STS in the PM1a_STS and PM1b_STS registers. On HW-reduced ACPI platforms, OSPM clears the WAK_STS bit in the Sleep Status Register.
+			struct acpi_pm1_sts_register* pm1a_evt_blk = (struct acpi_pm1_sts_register*) _acpi_data.fadt->pm1a_evt_blk;
+			struct acpi_pm1_sts_register* pm1b_evt_blk = (struct acpi_pm1_sts_register*) _acpi_data.fadt->pm1b_evt_blk;
+
+			pm1a_evt_blk->wak_sts = 1;
+			pm1b_evt_blk->wak_sts = 1;
+
+			// TODO: If not entering an S4BIOS state, and not a HW-reduced ACPI platform, then OSPM writes SLP_TYPa (from the associated sleeping object) with the SLP_ENa bit set to the PM1a_CNT register.
+			struct acpi_pm1_cnt_register* pm1a_cnt_blk = (struct acpi_pm1_cnt_register*) _acpi_data.fadt->pm1a_cnt_blk;
+
+			pm1a_cnt_blk->slp_en = 1;
+
+			// TODO: OSPM writes SLP_TYPb with the SLP_EN bit set to the PM1b_CNT register, or writes the HW-reduced ACPI Sleep Type value and the SLP_EN bit to the Sleep Control Register.
+			struct acpi_pm1_cnt_register* pm1b_cnt_blk = (struct acpi_pm1_cnt_register*) _acpi_data.fadt->pm1b_cnt_blk;
+
+			pm1b_cnt_blk->slp_en = 1;
+
+			// Wait until shutdown happens
+			while (true);
 			break;
 		case ACPI_COMMAND_REBOOT:
 			_acpi_info("rebooting");
