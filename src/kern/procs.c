@@ -95,7 +95,7 @@ pcb_t *_pcb_alloc( void )
 #endif
 		return NULL;
 	}
-	
+
 	// find the first available PCB structure
 	register int i = 0;
 	register pcb_t *pcb = _processes;
@@ -109,18 +109,21 @@ pcb_t *_pcb_alloc( void )
 	// a consistency problem because _avail_pcbs indicated
 	// that there should have been at least one available
 	assert( i < N_PROCS );
-	
+
 	// zero out the memory and mark this PCB as "in use"
 	CLEAR_PTR( pcb );
 	pcb->state = New;
-	
+
+	// TODO(Adin): Initialize this to the parent's cwd (and / for init)
+	pcb->cwd = NULL;
+
 	// one fewer PCB in the pool
 	_avail_pcbs -= 1;
 
 #if TRACING_PCB
 	__cio_puts( "** _pcb_alloc() ret #%d,_avail_pcbs %d\n", i, _avail_pcbs );
 #endif
-	
+
 	// return the PCB to the caller
 	return pcb;
 }
@@ -139,10 +142,10 @@ void _pcb_dealloc( pcb_t *pcb )
 #endif
 	// sanity check?
 	assert1( pcb != NULL );
-	
+
 	// one more PCB we can allocate
 	_avail_pcbs += 1;
-		
+
 	// we do the least amount of work necessary here;
 	// if/when this PCB is re-used, we'll clear the
 	// rest of it when it's allocated
@@ -309,7 +312,7 @@ void _pcb_zombify( pcb_t *victim )
 	**
 	** Also note: it's possible that the exiting process' parent is
 	** also init, which means we're letting one of zombie children
-	** of the exiting process be cleaned up by init before the 
+	** of the exiting process be cleaned up by init before the
 	** existing process itself is cleaned up by init. This will work,
 	** because after init cleans up the zombie, it will loop and
 	** call waitpid() again, by which time this exiting process will

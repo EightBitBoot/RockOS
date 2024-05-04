@@ -9,7 +9,9 @@
 #ifndef PROCS_H_
 #define PROCS_H_
 
+#define SP_KERNEL_SRC
 #include "common.h"
+#include "vfs/vfs.h"
 
 /*
 ** General (C and/or assembly) definitions
@@ -111,21 +113,23 @@ struct pcb_s {
 
 	status_t exit_status;	// termination status, for parent's use
 	time_t wakeup;			// wakeup time, for sleeping processes
-	
+
+	dirent_t *cwd;          // current working directory of the process
+
 	// two-byte fields
 	//
 	pid_t pid;				// PID of this process
 	pid_t ppid;				// PID of our parent process
-	
+
 	// one-byte fields
 	//
 	state_t state;			// process state
 	uint8_t ticks_left;		// ticks remaining in the current time slice
 	prio_t priority;		// process priority
-	
+
 	// filler, to round us up to 32 bytes
 	// adjust this as fields are added/removed/changed
-	uint8_t filler[9];	
+	uint8_t filler[5];
 
 };
 

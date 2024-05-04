@@ -38,7 +38,7 @@ struct mount
     super_block_t *mnt_sb; // The super block of the mount
 };
 
-extern mount_t *root_mount; // The mount for the root of the fs
+extern mount_t *g_root_mount; // The mount for the root of the fs
 extern queue_t mounts; // The list of currently installed mounts
 
 // ----------------------------------------------------------------------------
