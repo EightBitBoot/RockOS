@@ -36,6 +36,30 @@
 #define VGA_ATTR_HORIZ_PEL_PAN 0x13
 // Attribute: Color Select is Index 14
 #define VGA_ATTR_COLOR_SEL 0x14
+// All VGA Ports needed to change modes
+#define	VGA_AC_INDEX		0x3C0
+#define	VGA_AC_WRITE		0x3C0
+#define	VGA_AC_READ		0x3C1
+#define	VGA_MISC_WRITE		0x3C2
+#define VGA_SEQ_INDEX		0x3C4
+#define VGA_SEQ_DATA		0x3C5
+#define	VGA_DAC_READ_INDEX	0x3C7
+#define	VGA_DAC_WRITE_INDEX	0x3C8
+#define	VGA_DAC_DATA		0x3C9
+#define	VGA_MISC_READ		0x3CC
+#define VGA_GC_INDEX 		0x3CE
+#define VGA_GC_DATA 		0x3CF
+/*			COLOR emulation		MONO emulation */
+#define VGA_CRTC_INDEX		0x3D4		/* 0x3B4 */
+#define VGA_CRTC_DATA		0x3D5		/* 0x3B5 */
+#define	VGA_INSTAT_READ		0x3DA
+
+#define	VGA_NUM_SEQ_REGS	5
+#define	VGA_NUM_CRTC_REGS	25
+#define	VGA_NUM_GC_REGS		9
+#define	VGA_NUM_AC_REGS		21
+#define	VGA_NUM_REGS		(1 + VGA_NUM_SEQ_REGS + VGA_NUM_CRTC_REGS + \
+				VGA_NUM_GC_REGS + VGA_NUM_AC_REGS)
 
 void _reset_flipflop(void);
 
@@ -45,8 +69,28 @@ uint8_t _vga_attr_read(unsigned int index);
 
 void _vga_attr_write(unsigned int index, uint8_t data);
 
-unsigned int _vga_get_graphics_text_select(void);
+extern unsigned int vga_mode;
 
-void _vga_set_graphics_text_select(unsigned int graphics_text_select);
+unsigned int _vga_get_mode(void);
+
+void _vga_set_registers(unsigned char *regs); 
+
+void _vga_set_mode(unsigned int graphics_text_select);
+
+extern unsigned char g_80x25_text[];
+
+extern unsigned char g_640x480x16[];
+
+extern unsigned char g_320x200x256[];
+
+void dump_regs(unsigned char *regs);
+
+void read_regs(unsigned char *regs);
+
+void _vga_clear_screen(void);
+
+void draw_x(void);
+
+void draw_gradient(void);
 
 #endif

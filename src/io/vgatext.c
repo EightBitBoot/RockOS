@@ -255,6 +255,7 @@ void __vga_text_init( void ) {
 
 void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
     char* color_name;
+    unsigned char state[VGA_NUM_REGS];
     uint8_t blink = __vga_text_get_blink_enabled();
     switch (kb_val) {
         case 0x60: // Backtick
@@ -411,12 +412,27 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             }
             break;
         case 0x2e: // .
-            // Enter 16 Color Graphics Mode
-            if (_vga_get_graphics_text_select()) {
-                _vga_set_graphics_text_select(1);
-            } else {
-                _vga_set_graphics_text_select(0);
+            switch (_vga_get_mode()) {
+                case 0:
+                    _vga_set_mode(1);
+                    break;
+                case 1:
+                    _vga_set_mode(0);
+                    break;
             }
+            break;
+        case 0x0a: // Enter
+            read_regs(state);
+            dump_regs(state);
+            break;
+        case 0x2d: // -: Clear Screen (SLOW)
+            _vga_clear_screen();
+            break;
+        case 0x3d: // =: Draw X
+            draw_x();
+            break;
+        case 0x5c: // \: Draw Gradient
+            draw_gradient();
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
