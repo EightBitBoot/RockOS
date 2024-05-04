@@ -11,5 +11,7 @@ BuildImage
 
 **/build/
 
+src/offsets.h
+
 # IDE Files
 .vscode/
