@@ -157,9 +157,6 @@ enum prio_e {
 // Just VFS Things
 typedef uint32_t inum_t;
 
-// NOTE(Adin): This is here because it is used by _both_ userspace
-// 			   and kernelspace (when returning from listdir())
-
 #define VFS_NAME_MAX 255
 
 // TODO(Adin): Make this better
