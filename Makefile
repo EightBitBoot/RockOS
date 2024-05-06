@@ -358,7 +358,7 @@ clean:
 
 realclean: clean
 	rm -f offsets.h *.img BuildImage Offsets
-	rm -rf $(BUILD_DIR)
+	rm -rf src/offsets.h $(BUILD_DIR)
 
 #
 # Create a printable namelist from the prog.o file
