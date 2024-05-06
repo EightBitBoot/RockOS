@@ -111,4 +111,8 @@ struct kfile_ops
 
 // -----------------------------------------------------------------------------
 
+void _vfs_init(void);
+void _vfs_deinit(void);
+kfile_t *_vfs_allocate_file(void);
+
 #endif // #ifndef __VFS_H__

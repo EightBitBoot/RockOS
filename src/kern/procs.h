@@ -12,6 +12,7 @@
 #define SP_KERNEL_SRC
 #include "common.h"
 #include "vfs/vfs.h"
+#include "util/slab_cache.h"
 
 /*
 ** General (C and/or assembly) definitions
@@ -115,6 +116,7 @@ struct pcb_s {
 	time_t wakeup;			// wakeup time, for sleeping processes
 
 	dirent_t *cwd;          // current working directory of the process
+	kfile_t **open_files;   // open file table (max open files is defined in params.h)
 
 	// two-byte fields
 	//
@@ -129,7 +131,7 @@ struct pcb_s {
 
 	// filler, to round us up to 32 bytes
 	// adjust this as fields are added/removed/changed
-	uint8_t filler[5];
+	uint8_t filler[1];
 
 };
 
@@ -210,6 +212,8 @@ void _pcb_cleanup( pcb_t *pcb );
 ** @param victim  Pointer to the PCB for the exiting process
 */
 void _pcb_zombify( pcb_t *victim );
+
+fd_t _pcb_get_next_fd(pcb_t *pcb);
 
 /*
 ** Debugging/tracing routines

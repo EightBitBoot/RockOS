@@ -25,6 +25,8 @@
 #include "support.h"
 #include "syscalls.h"
 
+#include "vfs/vfs.h"
+
 // need address of the init() function
 USERMAIN( init );
 
@@ -252,7 +254,7 @@ static void _kshell( int code ) {
 	case '\r': // FALL THROUGH
 	case '\n':
 		break;
- 
+
 	default:
 		__cio_printf( "shell: unknown request '0x%02x'\n", code );
 		// FALL THROUGH
@@ -300,7 +302,7 @@ void _kinit( void ) {
 	** and queue modules.
 	*/
 
-#if defined(CONSOLE_STATS) 
+#if defined(CONSOLE_STATS)
 	__cio_init( _kshell );
 #else
 	__cio_init( NULL );	   // no console callback routine
@@ -351,6 +353,8 @@ void _kinit( void ) {
 
 	_clk_init();
 	_pcb_init();
+
+	_vfs_init();
 #if TRACING_PCB
 	__delay(50);
 #endif
@@ -381,7 +385,7 @@ void _kinit( void ) {
 
 	/*
 	** Create the initial user process
-	** 
+	**
 	** This code is largely stolen from the fork() and exec()
 	** implementations in syscalls.c; if those change, this must
 	** also change.

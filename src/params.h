@@ -37,4 +37,7 @@
 #define	CLOCK_FREQUENCY	1000
 #define	TICKS_PER_MS	1
 
+// Just vfs things
+#define VFS_MAX_OPEN_FILES 32 // 128 bytes per open file table (32 * sizeof(kfile_t *))
+
 #endif

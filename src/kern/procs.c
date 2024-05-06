@@ -6,6 +6,8 @@
 ** @brief	Process-related implementations
 */
 
+#include "params.h"
+#include "util/slab_cache.h"
 #define	SP_KERNEL_SRC
 
 #include "common.h"
@@ -44,6 +46,12 @@ pid_t _next_pid;
 // pointer to the PCB for the 'init' process
 pcb_t *_init_pcb;
 
+// Store for all open file tables
+// NOTE(Adin): Each table is a fixed size
+// 			   (VFS_MAX_NUM_OPEN_FILES * sizeof(kfile_t *))
+// 			   so a slab cache is ideal for memory management
+slab_cache_t open_file_tables;
+
 /*
 ** PRIVATE FUNCTIONS
 */
@@ -70,6 +78,9 @@ void _pcb_init( void )
 
 	// reset the PID counter
 	_next_pid = FIRST_USER_PID;
+
+	// Initialize the open file tables' slab cache
+	slab_init(&open_file_tables, VFS_MAX_OPEN_FILES * sizeof(kfile_t *), SC_INIT_LARGE_SLABS);
 
 	// report that we're done
 	__cio_puts( " PCB" );
@@ -114,8 +125,8 @@ pcb_t *_pcb_alloc( void )
 	CLEAR_PTR( pcb );
 	pcb->state = New;
 
-	// TODO(Adin): Initialize this to the parent's cwd (and / for init)
 	pcb->cwd = NULL;
+	pcb->open_files = slab_alloc(&open_file_tables, SC_ALLOC_ZERO_MEM);
 
 	// one fewer PCB in the pool
 	_avail_pcbs -= 1;
@@ -151,6 +162,10 @@ void _pcb_dealloc( pcb_t *pcb )
 	// rest of it when it's allocated
 	pcb->state = Unused;		// PCB is inactive
 	pcb->pid = pcb->ppid = 0;	// guard against finding it accidentally
+
+	if(pcb->open_files) {
+		slab_free(&open_file_tables, pcb->open_files);
+	}
 
 #if TRACING_PCB
 	__cio_printf( "** _pcb_dealloc(), avail now %d\n", _avail_pcbs );
@@ -428,6 +443,18 @@ void _pcb_zombify( pcb_t *victim )
 	** the calling routine, as it's possible we don't need to
 	** choose a new current process.
 	*/
+}
+
+fd_t _pcb_get_next_fd(pcb_t *pcb)
+{
+	// TODO(Adin): Check for pcb == NULL and pcb->open_files == NULL;
+	for(int i = 0; i < VFS_MAX_OPEN_FILES; i++) {
+		if(pcb->open_files[i] == NULL) {
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 /*

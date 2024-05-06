@@ -6,6 +6,8 @@
 ** @brief	System call implementations
 */
 
+#include "util/kstring.h"
+#include "vfs/vfs.h"
 #define SP_KERNEL_SRC
 
 #include "common.h"
@@ -27,6 +29,8 @@
 #include "io/vgatext.h"
 #include "acpi/acpi.h"
 #include "io/vga.h"
+
+#include "vfs/namey.h"
 
 /*
 ** PRIVATE DEFINITIONS
@@ -587,6 +591,9 @@ SYSIMPL(fork)
 	// replicate things inherited from the parent
 	pcb->priority = _current->priority;
 
+	pcb->cwd = _current->cwd; // TODO(Adin): Reference count the dir entry
+	// TODO(Adin): Initialize stdin and out from parent here (open new files)
+
 	/*
 	** Next, we need to update the ESP and EBP values in the child's
 	** stack.  The problem is that because we duplicated the parent's
@@ -851,7 +858,32 @@ SYSIMPL(vgawritepixel)
 
 SYSIMPL(fopen)
 {
+	char *path = (char *) ARG(_current, 1);
+	uint32_t flags = ARG(_current, 2);
+	(void) flags; // TODO(Adin): Add flags to test or remove this parameter (in ulib.h too)
 
+	if(!path) {
+		RET(_current) = -1;
+		return;
+	}
+
+	inode_t *target = NULL;
+	status_t namey_status = namey(path, &target);
+	if(namey_status) {
+		RET(_current) = namey_status;
+		return;
+	}
+
+	kfile_t *file = _vfs_allocate_file();
+	file->kf_ops = target->i_file_ops;
+	file->kf_ops->open(target, file);
+
+	fd_t fd = _pcb_get_next_fd(_current);
+	if(fd > 0) {
+		_current->open_files[fd] = file;
+	}
+
+	RET(_current) = fd;
 }
 
 SYSIMPL(fclose)

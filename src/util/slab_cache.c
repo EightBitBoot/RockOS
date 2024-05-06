@@ -88,7 +88,7 @@ status_t slab_init(slab_cache_t *cache, uint32_t element_size, uint32_t flags)
     return E_SUCCESS;
 }
 
-status_t slab_destroy(slab_cache_t *cache)
+status_t slab_deinit(slab_cache_t *cache)
 {
     for(void *curr = cache->all_slabs; curr != NULL; curr = *VOID_PTR_TO_LIST_ITEM(curr)) {
         __free_slab(cache, curr);

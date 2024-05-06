@@ -26,6 +26,7 @@ typedef struct slab_cache
 status_t slab_init(slab_cache_t *cache, uint32_t element_size, uint32_t flags);
 void *slab_alloc(slab_cache_t *cache, uint32_t flags);
 status_t slab_free(slab_cache_t *cache, void *element);
+status_t slab_deinit(slab_cache_t *cache);
 
 //
 // ---------------------------------------------TESTS-----------------------------------------------
