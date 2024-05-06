@@ -1,7 +1,7 @@
 
-#include "users.h"
-#include "ulib.h"
 #include "common.h"
+#include "usr/users.h"
+#include "usr/ulib.h"
 
 // Compile Time Settings
 #define WTSH_HIST_SIZE (20)
@@ -44,37 +44,24 @@ void init_state(wtsh_state_t *state)
 // Shell entry point
 USERMAIN(wtsh_main)
 {
-    char curr_char = 0;
+    char in_buf[2] = {};
     char line_buffer[LINE_BUFFER_SIZE] = {};
     uint8_t cursor_pos = 0;
-
-    char print_buffer[256];
 
     init_state(&g_shell_state);
 
     cwrites("wtsh> ");
-
     while(g_shell_state.is_running) {
         // // I don't like busy loops but that's what happens when you have non-blocking i/o
-        // while(read(CHAN_CIO, &curr_char, 1) == E_NO_DATA) {}
-        // sprint(print_buffer, "char: %c\n", curr_char);
+        while(read(CHAN_CIO, in_buf, 2) == E_NO_DATA) {}
 
-        int32_t num_read = read(CHAN_CIO, &curr_char, 1);
-
-        if(curr_char != 0) {
-            sprint(print_buffer, "num_read: %d, curr_char: %c\n", num_read, curr_char);
-        }
-        else {
-            sprint(print_buffer, "num_read: %d, curr_char: NULL\n", num_read);
-        }
-        cwrites(print_buffer);
-
-        if(IS_PRINTABLE(curr_char)) {
-            line_buffer[cursor_pos] = curr_char;
+        if(IS_PRINTABLE(in_buf[0])) {
+            line_buffer[cursor_pos] = in_buf[0];
             if(cursor_pos < LINE_BUFFER_SIZE - 1) {
                 cursor_pos++;
             }
-            write(CHAN_CIO, line_buffer, cursor_pos + 1); // Do I need to manually echo?
+
+            // write(CHAN_CIO, line_buffer, cursor_pos + 1); // Do I need to manually echo?
         }
     }
 

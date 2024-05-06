@@ -196,6 +196,24 @@ SYSIMPL(read)
 	switch( chan ) {
 
 	case CHAN_CIO:
+	 	// Quick and dirty fix for a cio bug:
+		//
+		// __cio_gets assumes it is getting a string of at least size 2
+		// (1 char + null terminator) and will return 0 if it gets
+		// length < 2. Because of how read is written, if n = 0 any time
+		// after the cio input queue check (in sio _OR_ cio) then it will
+		// put the current process in the sio sleep queue.  However, since
+		// the calling process expected input from cio, an sio input will
+		// likely never come.
+		//
+		// The easiest fix for this issue is to just check the buffer
+		// length when reading from cio and return an error if it is too
+		// small.
+		if(length < 2) {
+			RET(_current) = E_TOO_SMALL;
+			SYSCALL_EXIT(E_TOO_SMALL);
+		}
+
 		// console input is non-blocking
 		if( __cio_input_queue() < 1 ) {
 			RET(_current) = E_NO_DATA;

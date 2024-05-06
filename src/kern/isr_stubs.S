@@ -173,7 +173,6 @@ __isr_restore:
 ** relies on the standard save sequence (see above).
 */
 	.globl	__cio_printf_at
-	.global _pcb_dump
 
 /********************
 ** MOD FOR 20235
@@ -205,11 +204,6 @@ __isr_restore:
         pushl   $0
         call    __cio_printf_at
         addl    $24,%esp
-
-		pushl %ebx
-		pushl $0
-		call _pcb_dump
-		addl $8,%esp
 
 /********************
 ** END MOD FOR 20235
