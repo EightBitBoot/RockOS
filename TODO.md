@@ -1,0 +1,30 @@
+# Adin
+
+- [ ] System to register filesystems
+- [ ] Syscalls
+  - [ ] open
+  - [ ] close
+  - [ ] read
+  - [ ] write
+  - [ ] listdir
+  - [ ] create
+  - [ ] delete
+  - [ ] ioctl
+  - [ ] move / rename (optional)
+  - [ ] chdir (ability to change cwd of process; not mentioned in presentation but probably necessary)
+  - [ ] mount (optional)
+- [ ] direntry cache
+- [ ] Open file table in PCBs
+- [ ] Error checking in all major functions
+- [ ] Documentation
+- [ ] Mounting system
+- [ ] Buddy system allocator (semi optional: discussed in presentation but "in the middle of implementing it" so can probaly get away with using a slab cache for filenames)
+- [ ] stdin / stdout system
+  - [ ] Automatic opening of first two fds (0 and 1)
+  - [ ] Hooking into tty driver
+  - [ ] Blocking reads and writes? (probably optional)
+  - [ ] Userland input and print functions (writing to std{in|out})
+- [ ] Shell
+  - [ ] Cursor movement
+  - [ ] Command history (optional)
+  - [ ] stdio capabilities

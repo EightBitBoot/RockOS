@@ -356,6 +356,15 @@ int32_t swrite( const char *buf, uint32_t leng );
 */
 int32_t spawn( userfcn_t entry, int32_t prio, char *args[] );
 
+fd_t fopen(char *path, uint32_t flags);
+int32_t fclose(fd_t fd);
+uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
+uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
+// TODO(Adin): flistdir (what should the params be)
+int32_t fcreate(char *path, uint32_t flags);
+int32_t fdelete(char *path, uint32_t flags);
+int32_t fioctl(fd_t fd, uint32_t action, void *data);
+
 /*
 **********************************************
 ** STRING MANIPULATION FUNCTIONS

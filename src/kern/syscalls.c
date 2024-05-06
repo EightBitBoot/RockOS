@@ -99,7 +99,7 @@ SYSIMPL(exit)
 	// now, we need to do the following:
 	// 	reparent any children of this process and wake up init if need be
 	// 	find this process' parent and wake it up if it's waiting
-	
+
 	_pcb_zombify( _current );
 
 	// pick a new winner
@@ -684,7 +684,7 @@ SYSIMPL(exec)
 
 /**
 ** _sys_vgatextclear - clear the VGA Text Screen
-** 
+**
 ** implements:
 **		void vgatextclear( void );
 */
@@ -847,11 +847,54 @@ SYSIMPL(vgawritepixel)
 	__vga_write_pixel(ARG(_current,1), ARG(_current,2), ARG(_current,3));
 }
 
+// ----------------------------- VFS Calls -----------------------------
+
+SYSIMPL(fopen)
+{
+
+}
+
+SYSIMPL(fclose)
+{
+
+}
+
+SYSIMPL(fread)
+{
+
+}
+
+SYSIMPL(fwrite)
+{
+
+}
+
+SYSIMPL(flistdir)
+{
+
+}
+
+SYSIMPL(fcreate)
+{
+
+}
+
+SYSIMPL(fdelete)
+{
+
+}
+
+SYSIMPL(fioctl)
+{
+
+}
+
+
 // The system call jump table
 //
 // Initialized using designated initializers to ensure the entries
 // are correct even if the syscall code values should happen to change.
-// This also makes it easy to add new system call entries, as their 
+// This also makes it easy to add new system call entries, as their
 // position in the initialization list is irrelevant.
 
 static void (* const _syscalls[N_SYSCALLS])( void ) = {
@@ -877,6 +920,16 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_vgatest ]				   = _sys_vgatest,
 	[ SYS_vgadrawimage ]		   = _sys_vgadrawimage,
 	[ SYS_vgawritepixel ]		   = _sys_vgawritepixel,
+
+	[ SYS_fopen    ]              = _sys_fopen,
+	[ SYS_fclose   ]              = _sys_fclose,
+	[ SYS_fread    ]              = _sys_fread,
+	[ SYS_fwrite   ]              = _sys_fwrite,
+	[ SYS_flistdir ]              = _sys_flistdir,
+	[ SYS_fcreate  ]              = _sys_fcreate,
+	[ SYS_fdelete  ]              = _sys_fdelete,
+	[ SYS_fioctl   ]              = _sys_fioctl,
+
 };
 
 /**
@@ -926,7 +979,7 @@ static void _sys_isr( int vector, int code ) {
 #if TRACING_SYSCALLS
 	__cio_printf( "** <-- SYS pid %u ret %u\n", _current->pid, RET(_current) );
 #endif
-	
+
 	// Tell the PIC we're done.
 	__outb( PIC_PRI_CMD_PORT, PIC_EOI );
 }

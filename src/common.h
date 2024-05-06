@@ -165,6 +165,8 @@ typedef struct adinfs_dent
 	char name[VFS_NAME_MAX];
 } adinfs_dent_t;
 
+typedef int fd_t;
+
 /*
 ** Additional OS-only or user-only things
 */

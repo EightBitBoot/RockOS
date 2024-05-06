@@ -47,6 +47,7 @@ SYSCALL(setdata)
 SYSCALL(kill)
 SYSCALL(fork)
 SYSCALL(exec)
+
 SYSCALL(vgatextclear)
 SYSCALL(vgatextgetactivecolor)
 SYSCALL(vgatextsetactivecolor)
@@ -59,6 +60,15 @@ SYSCALL(vgaclearscreen)
 SYSCALL(vgatest)
 SYSCALL(vgadrawimage)
 SYSCALL(vgawritepixel)
+
+SYSCALL(fopen)
+SYSCALL(fclose)
+SYSCALL(fread)
+SYSCALL(fwrite)
+SYSCALL(flistdir)
+SYSCALL(fcreate)
+SYSCALL(fdelete)
+SYSCALL(fioctl)
 
 /*
 ** This is a bogus system call; it's here so that we can test
