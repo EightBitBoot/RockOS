@@ -261,6 +261,15 @@ void vgawritepixel( uint16_t x, uint16_t y, uint8_t color );
 */
 void bogus( void );
 
+fd_t fopen(char *path, uint32_t flags);
+int32_t fclose(fd_t fd);
+uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
+uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
+// TODO(Adin): flistdir (what should the params be)
+int32_t fcreate(char *path, uint32_t flags);
+int32_t fdelete(char *path, uint32_t flags);
+int32_t fioctl(fd_t fd, uint32_t action, void *data);
+
 /*
 **********************************************
 ** CONVENIENT "SHORTHAND" VERSIONS OF SYSCALLS
@@ -355,15 +364,6 @@ int32_t swrite( const char *buf, uint32_t leng );
 ** @returns     The PID of the child, or an error code
 */
 int32_t spawn( userfcn_t entry, int32_t prio, char *args[] );
-
-fd_t fopen(char *path, uint32_t flags);
-int32_t fclose(fd_t fd);
-uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
-uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
-// TODO(Adin): flistdir (what should the params be)
-int32_t fcreate(char *path, uint32_t flags);
-int32_t fdelete(char *path, uint32_t flags);
-int32_t fioctl(fd_t fd, uint32_t action, void *data);
 
 /*
 **********************************************

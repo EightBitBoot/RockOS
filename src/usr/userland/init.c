@@ -180,10 +180,16 @@ static proc_t spawn_table_2[] = {
 	PROCENT( main6, UserPrio, "V", "userV", "V", "6", "k" ),
 #endif
 
-	PROCENT( main7, UserPrio, "V", "userV", "V"),
+#ifdef SPAWN_TEST_VGA
+	// G for jhraphic
+	PROCENT( test_vga, UserPrio, "G", "test_vga"),
+#endif
 
-	PROCENT( main8, UserPrio, "V", "userV", "V"),
-	
+#ifdef SPAWN_TEST_VFS
+	// V for vilesystem
+	PROCENT(test_vfs, UserPrio, "V", "vfs_test"),
+#endif
+
 	// a dummy entry to use as a sentinel
 	// PROCENT( 0, 0, 0, 0 )
 	{ 0 }

@@ -863,7 +863,7 @@ SYSIMPL(fopen)
 	(void) flags; // TODO(Adin): Add flags to test or remove this parameter (in ulib.h too)
 
 	if(!path) {
-		RET(_current) = -1;
+		RET(_current) = E_BAD_PARAM;
 		return;
 	}
 
@@ -874,12 +874,20 @@ SYSIMPL(fopen)
 		return;
 	}
 
+	// TODO(Adin): Should this be a reason to fail or should open be an extra
+	//			   hook the fs driver can _optionally_ implement?
+	if(!target->i_file_ops || !target->i_file_ops->open) {
+		RET(_current) = E_NOT_SUPPORTED;
+		return;
+	}
+
 	kfile_t *file = _vfs_allocate_file();
+	file->kf_inode = target;
 	file->kf_ops = target->i_file_ops;
 	file->kf_ops->open(target, file);
 
 	fd_t fd = _pcb_get_next_fd(_current);
-	if(fd > 0) {
+	if(fd >= 0) {
 		_current->open_files[fd] = file;
 	}
 

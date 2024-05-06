@@ -17,13 +17,15 @@ dirent_t *testfs_mount(fs_type_t *fs_type);
 
 static inode_ops_t testfs_inode_file_ops = {};
 static inode_ops_t testfs_inode_dir_ops = {
-    .lookup = testfs_lookup
+    .lookup = testfs_lookup,
 };
 
-static kfile_ops_t testfs_file_ops = {};
+static kfile_ops_t testfs_file_ops = {
+    .open = testfs_open,
+};
 static kfile_ops_t testfs_dir_ops = {
     .open = testfs_open,
-    .iterate_shared = testfs_iterate_shared
+    .iterate_shared = testfs_iterate_shared,
 };
 
 static fs_type_t testfs_fs_type = {
@@ -78,17 +80,19 @@ status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
     return E_NOT_FOUND;
 }
 
-// TODO(Adin): This shouldn't be static here, but what's a guy
-// gonna do without an allocator
-static super_block_t testfs_super_block = {};
-static dirent_t testfs_root_dirent = {};
+static super_block_t *testfs_super_block = NULL;
 
 dirent_t *testfs_mount(fs_type_t *fs_type)
 {
+    // There will only ever be one instance of this filesystem
+    // regardless of how many times it is mounted
+    if(!testfs_super_block) {
+        testfs_super_block = _vfs_allocate_superblock();
+    }
     // Init the super block
-    testfs_super_block.sb_fstype = &testfs_fs_type;
-    _que_create(&(testfs_super_block.sb_inodes), NULL);
-    testfs_super_block.sb_root_inode = &bogus_root_node.inode;
+    testfs_super_block->sb_fstype = &testfs_fs_type;
+    _que_create(&(testfs_super_block->sb_inodes), NULL);
+    testfs_super_block->sb_root_inode = &bogus_root_node.inode;
 
     // Init the inodes in the bogus nodes
     for(int i = 0; i < BOGUS_NUM_NODES; i++) {
@@ -96,7 +100,7 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
         inode_t *curr_inode = &curr_node->inode;
 
         curr_inode->i_num = i;
-        curr_inode->i_super = &testfs_super_block;
+        curr_inode->i_super = testfs_super_block;
 
         if(curr_node->num_children > 0) {
             curr_inode->i_ops = &testfs_inode_dir_ops;
@@ -109,24 +113,25 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
 
         curr_inode->i_priv = curr_node;
 
-        _que_insert(&testfs_super_block.sb_inodes, curr_inode);
+        _que_insert(&testfs_super_block->sb_inodes, curr_inode);
     }
 
+    dirent_t *testfs_root_dirent = _vfs_allocate_dirent();
+
     // Init the root dirent
-    testfs_root_dirent.d_inode = &bogus_root_node.inode;
-    testfs_root_dirent.d_name.str = bogus_root_node.name;
-    testfs_root_dirent.d_name.len = __strlen(bogus_root_node.name);
+    testfs_root_dirent->d_inode = &bogus_root_node.inode;
+    testfs_root_dirent->d_name.str = bogus_root_node.name;
+    testfs_root_dirent->d_name.len = __strlen(bogus_root_node.name);
 
-    return &testfs_root_dirent;
+    return testfs_root_dirent;
 }
-
 
 // -------------------------------------------------------
 // Create me
 
 status_t testfs_init(void)
 {
-    // TODO(Adin): Register fstype
+    _vfs_register_fs_type(&testfs_fs_type);
     return E_SUCCESS;
 }
 

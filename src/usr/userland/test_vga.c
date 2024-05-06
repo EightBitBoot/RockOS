@@ -13,7 +13,7 @@
 ** Invoked as:  main7
 */
 
-USERMAIN( main7 ) {
+USERMAIN( test_vga ) {
 	vgatextclear();
 
 	// Print Color Tests: Foreground Color

@@ -17,7 +17,7 @@ status_t namey(char *path, inode_t **result)
     // Yes I know this doesn't account for leading spaces
     // No I don't care atm
     if(kpath.str[0] == '/') {
-        curr_inode = g_root_mount->mnt_sb->sb_root_inode;
+        curr_inode = g_root_dirent->d_inode;
     }
 
     kstr_t curr_component;
@@ -50,5 +50,5 @@ status_t namey(char *path, inode_t **result)
     }
 
     *result = curr_inode;
-    return E_SUCCESS;
+    return S_OK;
 }

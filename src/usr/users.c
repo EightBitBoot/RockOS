@@ -46,6 +46,9 @@ USERMAIN(userQ); USERMAIN(userR); USERMAIN(userS); USERMAIN(userT);
 USERMAIN(userU); USERMAIN(userV); USERMAIN(userW); USERMAIN(userX);
 USERMAIN(userY); USERMAIN(userZ);
 
+USERMAIN(test_vga);
+USERMAIN(test_vfs);
+
 /*
 ** The user processes
 **
@@ -117,8 +120,13 @@ USERMAIN(userY); USERMAIN(userZ);
 #include "userland/userW.c"
 #endif
 
-#include "userland/main7.c"
-#include "userland/main8.c"
+#if defined(SPAWN_TEST_VGA)
+#include "userland/test_vga.c"
+#endif
+
+#if defined(SPAWN_TEST_VFS)
+#include "userland/test_vfs.c"
+#endif
 
 /*
 ** System processes - these should always be included here

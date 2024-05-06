@@ -1,8 +1,8 @@
 # Adin
 
-- [ ] System to register filesystems
+- [x] System to register filesystems
 - [ ] Syscalls
-  - [ ] open
+  - [x] open
   - [ ] close
   - [ ] read
   - [ ] write
@@ -14,7 +14,7 @@
   - [ ] chdir (ability to change cwd of process; not mentioned in presentation but probably necessary)
   - [ ] mount (optional)
 - [ ] direntry cache
-- [ ] Open file table in PCBs
+- [x] Open file table in PCBs
 - [ ] Error checking in all major functions
 - [ ] Documentation
 - [ ] Mounting system

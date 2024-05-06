@@ -123,6 +123,9 @@
 #define	SPAWN_SHELL
 #endif
 
+#define SPAWN_TEST_VFS
+
+#ifndef SPAWN_TEST_VFS
 // uncomment these to spawn the various user processes directly
 // #define SPAWN_A
 // #define SPAWN_B
@@ -145,6 +148,10 @@
 // #define SPAWN_T
 // #define SPAWN_U
 // #define SPAWN_V
+// #define SPAWN_W // VGA syscall testing
+
+// #define SPAWN_TEST_VGA
+#endif
 
 //
 // There is no userO.  Users W-Z are spawned from other

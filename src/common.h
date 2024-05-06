@@ -126,6 +126,7 @@ enum datum_e {
 #define	E_NO_PROCS		(-6)
 #define	E_NOT_FOUND		(-7)
 #define E_NOT_A_DIR     (-8)
+#define E_NOT_SUPPORTED (-9)
 
 // ----------------------------------------------------------
 // Predefined user process exit status values

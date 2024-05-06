@@ -21,25 +21,35 @@ typedef struct kfile        kfile_t;
 
 // ----------------------------------------------------------------------------
 
+// TODO(Adin): Move the dirent cache system to its own file (if needed)
 struct dirent
 {
     kstr_t d_name;
     char d_name_backing[VFS_NAME_MAX];
     inode_t *d_inode;
+
+    // TODO(Adin): Parent and children
 };
+
+// TODO(Adin): Make this dynamic (eg. accessed via a function call) when the
+//             dirent cache system is made
+extern dirent_t *g_root_dirent;
 
 // ----------------------------------------------------------------------------
 
 struct mount
 {
     uint32_t mnt_num;
+
     fs_type_t *mnt_fs_type;
-    dirent_t *mnt_don; // Dirent the mount is mounted on
     super_block_t *mnt_sb; // The super block of the mount
+
+    dirent_t *mnt_don; // Dirent the mount is mounted on (NULL for root mount)NULL
+    dirent_t *mnt_root; // Root direntry of the mount
 };
 
-extern mount_t *g_root_mount; // The mount for the root of the fs
-extern queue_t mounts; // The list of currently installed mounts
+// NOTE(Adin): The root mount was previously its own variable but for it it will
+//             be assumed to be the first mount created (mount #0)
 
 // ----------------------------------------------------------------------------
 
@@ -51,7 +61,7 @@ struct fs_type
     char *ft_name;
     dirent_t *(*mount)(fs_type_t *); // TODO(Adin): Add more params here as needed
 
-    void *ft_priv;
+    void *fst_priv;
 };
 
 // ----------------------------------------------------------------------------
@@ -113,6 +123,12 @@ struct kfile_ops
 
 void _vfs_init(void);
 void _vfs_deinit(void);
+
+status_t _vfs_register_fs_type(fs_type_t *filesystem);
+dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num);
+
 kfile_t *_vfs_allocate_file(void);
+super_block_t *_vfs_allocate_superblock(void);
+dirent_t *_vfs_allocate_dirent(void);
 
 #endif // #ifndef __VFS_H__
