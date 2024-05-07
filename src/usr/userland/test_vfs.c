@@ -11,6 +11,20 @@ char print_buffer[PRINT_BUFFER_LEN] = {};
 #define printf(fmt, ...) \
     sprint(print_buffer, fmt , ##__VA_ARGS__); cwrites(print_buffer)
 
+/**
+ *
+ * root (/)/
+ * ├─ etc/
+ * │  ├─ passwd
+ * │  ├─ group
+ * ├─ usr/
+ * │  ├─ lib/
+ * │  │  ├─ libgdi.so
+ * │  ├─ bin/
+ * │  │  ├─ chattr
+ *
+*/
+
 void test_fd_assignment(void)
 {
     fd_t fd0 = fopen("/", O_READ, 0);
@@ -107,13 +121,97 @@ void test_fioctl(void)
     fclose(libgdi_fd);
 }
 
+
+#define TEST_READ_PRINT(fd_name)                                         \
+    printf(                                                              \
+        #fd_name ": %d, num_read: %d, status %d, read_buffer: \"%s\"\n", \
+        fd_name, num_read, status, read_buffer                         \
+    )
+
+#define READ_BUFFER_LEN 256
+
+void test_read(void)
+{
+    // Expected:
+    // passwd_fd: 0, num_read: 0, status -12, read_buffer: ""
+    // Closing testfs file (in driver) passwd
+    // passwd_fd: 0, num_read: 6, status -13, read_buffer: "passwd"
+    // passwd_fd: 0, num_read: 0, status -13, read_buffer: ""
+    // Closing testfs file (in driver) passwd
+    // passwd_fd: 0, num_read: 3, status 0, read_buffer: "pas"
+    // passwd_fd: 0, num_read: 3, status -13, read_buffer: "swd"
+    // Closing testfs file (in driver) passwd
+    // passwd_fd: 0, num_read: 3, status 0, read_buffer: "pas"
+    // passwd_fd1: 1, num_read: 6, status -13, read_buffer: "passwd"
+    // Closing testfs file (in driver) passwd
+    // Closing testfs file (in driver) passwd
+    // etc_fd: 0, num_read: 0, status -9, read_buffer: ""
+
+    char read_buffer[READ_BUFFER_LEN] = {};
+
+    // Test read on a write-opened open file
+    fd_t passwd_fd = fopen("/etc/passwd", O_WRITE, 0);
+    int32_t status = 0;
+    uint32_t num_read = fread(passwd_fd, read_buffer, 10, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    fclose(passwd_fd);
+
+    // Test read on a read-opened file (where num_to_read == file len)
+    passwd_fd = fopen("/etc/passwd", O_READ, 0);
+    num_read = fread(passwd_fd, read_buffer, 6, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    // Test read on a read-opened file (where rw head == file len)
+    num_read = fread(passwd_fd, read_buffer, 6, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+
+    fclose(passwd_fd); // Required because fseek isn't implemented yet
+
+    // Partial read test
+    passwd_fd = fopen("/etc/passwd", O_READ, 0);
+    num_read = fread(passwd_fd, read_buffer, 3, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    num_read = fread(passwd_fd, read_buffer, 6, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+    fclose(passwd_fd);
+
+    // Test multiple files on same inode with different rw heads
+    passwd_fd = fopen("/etc/passwd", O_READ, 0);
+    fd_t passwd_fd1 = fopen("/etc/passwd", O_READ, 0);
+    num_read = fread(passwd_fd, read_buffer, 3, 0, &status);
+    TEST_READ_PRINT(passwd_fd);
+
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    num_read = fread(passwd_fd1, read_buffer, 6, 0, &status);
+    TEST_READ_PRINT(passwd_fd1);
+    fclose(passwd_fd);
+    fclose(passwd_fd1);
+
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    // Test read on file that doesn't support it (driver didn't register a read callback in its kfile_ops_t)
+    fd_t etc_fd = fopen("/etc", O_READ, 0);
+    num_read = fread(etc_fd, read_buffer, 3, 0, &status);
+    TEST_READ_PRINT(etc_fd);
+
+    fclose(etc_fd);
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
 
     // test_fd_assignment();
     // test_rw_locks();
-    test_fioctl();
+    // test_fioctl();
+    test_read();
 
     return 0;
 }

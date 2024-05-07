@@ -872,6 +872,9 @@ static int32_t __status_to_sys_ret(status_t status)
 		case S_BAD_ACTION:
 			return E_BAD_ACTION;
 
+		case S_EOF:
+			return E_EOF;
+
 		case S_OK:
 			return E_SUCCESS;
 
@@ -883,6 +886,7 @@ static int32_t __status_to_sys_ret(status_t status)
 	return E_FAILURE;
 }
 
+// fd_t fopen(char *path, uint32_t mode, uint32_t flags);
 SYSIMPL(fopen)
 {
 	char *path     = (char *) ARG(_current, 1);
@@ -956,6 +960,7 @@ SYSIMPL(fopen)
 	RET(_current) = fd;
 }
 
+// int32_t fclose(fd_t fd);
 SYSIMPL(fclose)
 {
 	fd_t fd = ARG(_current, 1);
@@ -996,31 +1001,78 @@ SYSIMPL(fclose)
 	RET(_current) = E_SUCCESS;
 }
 
+// uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags int32_t *status);
 SYSIMPL(fread)
 {
+	fd_t fd            = ARG(_current, 1);
+	void *buf          = (void *) ARG(_current, 2);
+	uint32_t num_bytes = ARG(_current, 3);
+	uint32_t flags     = ARG(_current, 4);
+	int32_t *status    = (int32_t *) ARG(_current, 5);
 
+	if(IS_BAD_FD(fd) || !buf) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_PARAM;
+		}
+		return;
+	}
+
+	kfile_t *target = _current->open_files[fd];
+	if(!(target->kf_mode & O_READ)) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_ACTION;
+		}
+		return;
+	}
+
+	if(!target->kf_ops || !target->kf_ops->read) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_NOT_SUPPORTED;
+		}
+		return;
+	}
+
+	uint32_t num_read = 0;
+	uint32_t offset = (target->kf_inode->i_type == S_TYPE_DEV ? 0 : target->kf_rwhead);
+
+	status_t read_status = target->kf_ops->read(target, buf, num_bytes, offset, flags, &num_read);
+
+	target->kf_rwhead += num_read;
+
+	RET(_current) = num_read;
+	if(status) {
+		*status = __status_to_sys_ret(read_status);
+	}
 }
 
+// uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
 SYSIMPL(fwrite)
 {
 
 }
 
+// // TODO(Adin): flistdir (what should the params be)
 SYSIMPL(flistdir)
 {
 
 }
 
+// int32_t fcreate(char *path, uint32_t flags);
 SYSIMPL(fcreate)
 {
 
 }
 
+// int32_t fdelete(char *path, uint32_t flags);
 SYSIMPL(fdelete)
 {
 
 }
 
+// int32_t fioctl(fd_t fd, uint32_t action, void *data);
 SYSIMPL(fioctl)
 {
 	fd_t fd         = ARG(_current, 1);

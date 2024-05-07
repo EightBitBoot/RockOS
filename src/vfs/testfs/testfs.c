@@ -13,12 +13,15 @@
 
 status_t testfs_open(inode_t *inode, kfile_t *file);
 status_t testfs_close_file(kfile_t *file);
+status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
 
 int testfs_iterate_shared(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count);
 status_t testfs_lookup(inode_t *inode, dirent_t *dirent);
 
 dirent_t *testfs_mount(fs_type_t *fs_type);
+
+#define INT_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #define FILE_TO_BOGUS_NODE(file_ptr) ((bogus_node_t *)(file_ptr)->kf_priv)
 
@@ -33,6 +36,7 @@ static inode_ops_t testfs_inode_dir_ops = {
 static kfile_ops_t testfs_file_ops = {
     .open = testfs_open,
     .close = testfs_close_file,
+    .read = testfs_file_read,
     .ioctl = testfs_ioctl,
 };
 static kfile_ops_t testfs_dir_ops = {
@@ -115,6 +119,35 @@ status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data)
     );
 
     return S_OK;
+}
+
+status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read)
+{
+    if(!buffer || !num_read) {
+        return E_BAD_PARAM;
+    }
+
+    bogus_node_t *node = FILE_TO_BOGUS_NODE(file);
+    uint32_t data_len = __strlen(node->name);
+
+    if(offset > data_len) {
+        *num_read = 0;
+        return S_EOF;
+    }
+
+    status_t result = S_OK;
+
+    // (data_len - offset) will never underflow because of the (offset > data_len)
+    // check above
+    uint32_t num_actually_read = INT_MIN(data_len - offset, num_to_read);
+    __memcpy(buffer, node->name + offset, num_actually_read);
+
+    if(num_actually_read < num_to_read || data_len - offset == num_to_read) {
+        result = S_EOF;
+    }
+
+    *num_read = num_actually_read;
+    return result;
 }
 
 static super_block_t *testfs_super_block = NULL;

@@ -107,7 +107,7 @@ struct inode_ops
 struct kfile
 {
     inode_t *kf_inode;
-    uint32_t kf_wrhead; // Read/write head: currently unused
+    uint32_t kf_rwhead;
 
     uint8_t kf_mode;
 
@@ -134,6 +134,12 @@ struct kfile_ops
     // This is completely fs driver dependent and, unlike posix, there are no default actions; meaning if the
     // driver doesn't support it, the fioctl syscall will return E_NOT_SUPPORTED.
     status_t (*ioctl)(kfile_t *file, uint32_t action, void *data);
+
+    // Read data from a file into a userspace-supplied buffer. Because this isn't the fanciest vfs in the world, (and not intended
+    // to support the fanciest fs drivers either) read / write heads are handled by the vfs instead of the fs driver itself. As a
+    // consequence, the vfs passes the offset in instead of requesting it from the driver. In the case where the user is trying to
+    // read off the end of the file, the fs driver should return an error status and set the number of bytes read to 0.
+     status_t (*read)(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
 };
 
 // -----------------------------------------------------------------------------
