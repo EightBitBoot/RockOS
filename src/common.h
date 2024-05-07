@@ -116,17 +116,19 @@ enum datum_e {
 #define E_SUCCESS		0
 
 // generic failure
-#define E_FAILURE		(-1)
+#define E_FAILURE		 (-1)
 
 // other failures
-#define E_BAD_PARAM		(-2)
-#define E_BAD_CHAN		(-3)
-#define	E_NO_CHILDREN	(-4)
-#define	E_NO_DATA		(-5)
-#define	E_NO_PROCS		(-6)
-#define	E_NOT_FOUND		(-7)
-#define E_NOT_A_DIR     (-8)
-#define E_NOT_SUPPORTED (-9)
+#define E_BAD_PARAM		 (-2)
+#define E_BAD_CHAN		 (-3)
+#define	E_NO_CHILDREN	 (-4)
+#define	E_NO_DATA		 (-5)
+#define	E_NO_PROCS		 (-6)
+#define	E_NOT_FOUND		 (-7)
+#define E_NOT_A_DIR      (-8)
+#define E_NOT_SUPPORTED  (-9)
+#define E_ALREADY_OPEN   (-10)
+#define E_MAX_FILES_OPEN (-11)
 
 // ----------------------------------------------------------
 // Predefined user process exit status values
@@ -167,6 +169,14 @@ typedef struct adinfs_dent
 } adinfs_dent_t;
 
 typedef int fd_t;
+
+#define O_READ  (0x01U)
+#define O_WRITE (0x02U)
+#define O_RDWR  (O_READ | O_WRITE)
+
+#define S_TYPE_DIR  (1U)
+#define S_TYPE_FILE (2U)
+#define S_TYPE_DEV  (3U)
 
 /*
 ** Additional OS-only or user-only things

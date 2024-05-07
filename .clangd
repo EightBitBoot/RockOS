@@ -1,5 +1,5 @@
 Diagnostics:
-    Suppress: "pp_including_mainfile_in_preamble"
+    Suppress: [pp_including_mainfile_in_preamble, -Wbuiltin-requires-header]
     UnusedIncludes: None
 
 CompileFlags:

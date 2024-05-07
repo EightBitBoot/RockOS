@@ -261,7 +261,7 @@ void vgawritepixel( uint16_t x, uint16_t y, uint8_t color );
 */
 void bogus( void );
 
-fd_t fopen(char *path, uint32_t flags);
+fd_t fopen(char *path, uint32_t mode, uint32_t flags);
 int32_t fclose(fd_t fd);
 uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
 uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);

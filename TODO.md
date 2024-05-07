@@ -13,6 +13,8 @@
   - [ ] move / rename (optional)
   - [ ] chdir (ability to change cwd of process; not mentioned in presentation but probably necessary)
   - [ ] mount (optional)
+  - [ ] stat (optional)
+- [x] Read and write locks
 - [ ] direntry cache
 - [x] Open file table in PCBs
 - [ ] Error checking in all major functions
@@ -23,7 +25,7 @@
   - [ ] Automatic opening of first two fds (0 and 1)
   - [ ] Hooking into tty driver
   - [ ] Blocking reads and writes? (probably optional)
-  - [ ] Userland input and print functions (writing to std{in|out})
+  - [ ] Userland input and print functions (writing to and reading from std{in|out})
 - [ ] Shell
   - [ ] Cursor movement
   - [ ] Command history (optional)

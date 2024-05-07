@@ -81,6 +81,10 @@ struct inode
 {
     inum_t i_num; // Per-filesystem unique inode number
     uint32_t i_mnt_num; // Mount number (makes unique id when combined with i_num)
+    uint8_t i_type; // 1 of S_TYPE_FILE, S_TYPE_DIR, S_TYPE_DEV (from common.h)
+
+    uint32_t i_nr_readers;
+    bool_t i_has_writer;
 
     super_block_t *i_super;
 
@@ -104,6 +108,8 @@ struct kfile
 {
     inode_t *kf_inode;
     uint32_t kf_wrhead; // Read/write head: currently unused
+
+    uint8_t kf_mode;
 
     kfile_ops_t *kf_ops;
     void *kf_priv;

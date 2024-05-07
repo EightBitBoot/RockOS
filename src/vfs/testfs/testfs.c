@@ -114,10 +114,12 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
         if(curr_node->num_children > 0) {
             curr_inode->i_ops = &testfs_inode_dir_ops;
             curr_inode->i_file_ops = &testfs_dir_ops;
+            curr_inode->i_type = S_TYPE_DIR;
         }
         else {
             curr_inode->i_ops = &testfs_inode_file_ops;
             curr_inode->i_file_ops = &testfs_file_ops;
+            curr_inode->i_type = S_TYPE_FILE;
         }
 
         curr_inode->i_priv = curr_node;

@@ -859,11 +859,12 @@ SYSIMPL(vgawritepixel)
 
 SYSIMPL(fopen)
 {
-	char *path = (char *) ARG(_current, 1);
-	uint32_t flags = ARG(_current, 2);
+	char *path     = (char *) ARG(_current, 1);
+	uint32_t mode  = ARG(_current, 2);
+	uint32_t flags = ARG(_current, 3);
 	(void) flags; // TODO(Adin): Add flags to test or remove this parameter (in ulib.h too)
 
-	if(!path) {
+	if(!path || !(mode & O_READ || mode & O_WRITE)) {
 		RET(_current) = E_BAD_PARAM;
 		return;
 	}
@@ -871,26 +872,60 @@ SYSIMPL(fopen)
 	inode_t *target = NULL;
 	status_t namey_status = namey(path, &target);
 	if(namey_status) {
-		RET(_current) = namey_status;
+		RET(_current) = E_FAILURE;
 		return;
 	}
 
 	// TODO(Adin): Should this be a reason to fail or should open be an extra
 	//			   hook the fs driver can _optionally_ implement?
-	if(!target->i_file_ops || !target->i_file_ops->open) {
+	if(!target->i_file_ops || !target->i_file_ops->open){
 		RET(_current) = E_NOT_SUPPORTED;
+		return;
+	}
+
+	/*
+	 * If target file
+	 * a) isn't a device _AND_
+	 * b) this is a read trying to steal from a writer _OR_
+	 * c) this is a write trying to steal from either a reader or a writer
+	*/
+	if(target->i_type != S_TYPE_DEV &&
+	   ((mode & O_READ && target->i_has_writer) ||
+	   (mode & O_WRITE && (target->i_has_writer || target->i_nr_readers > 0))))
+	{
+		RET(_current) = E_ALREADY_OPEN;
+		return;
+	}
+
+	fd_t fd = _pcb_get_next_fd(_current);
+	if(fd < 0) {
+		RET(_current) = E_MAX_FILES_OPEN;
 		return;
 	}
 
 	kfile_t *file = _vfs_allocate_file();
 	file->kf_inode = target;
 	file->kf_ops = target->i_file_ops;
-	file->kf_ops->open(target, file);
+	file->kf_mode = mode;
 
-	fd_t fd = _pcb_get_next_fd(_current);
-	if(fd >= 0) {
-		_current->open_files[fd] = file;
+	status_t open_result = file->kf_ops->open(target, file);
+	if(open_result) {
+		_vfs_free_file(file);
+		RET(_current) = E_FAILURE;
+		return;
 	}
+
+	if(target->i_type != S_TYPE_DEV) {
+		if(mode & O_READ) {
+			target->i_nr_readers++;
+		}
+
+		if(mode & O_WRITE) {
+			target->i_has_writer = true;
+		}
+	}
+
+	_current->open_files[fd] = file;
 
 	RET(_current) = fd;
 }
@@ -910,6 +945,22 @@ SYSIMPL(fclose)
 	if(file->kf_ops && file->kf_ops->close) {
 		file->kf_ops->close(file);
 	}
+
+	if(file->kf_inode->i_type != S_TYPE_DEV) {
+		if(file->kf_mode & O_READ) {
+			file->kf_inode->i_nr_readers--;
+		}
+
+		if(file->kf_mode & O_WRITE) {
+			file->kf_inode->i_has_writer = false;
+		}
+	}
+
+	// Useful debugging print: do not remove
+	// __cio_printf(
+	// 	"close fd %d: nr_writers: %d, has_writer %d\n",
+	// 	fd, file->kf_inode->i_nr_readers, file->kf_inode->i_has_writer
+	// );
 
 	_current->open_files[fd] = NULL;
 	_vfs_free_file(file);
