@@ -113,6 +113,12 @@ struct kfile_ops
 {
     // Fill out a file structure from the inode
     status_t (*open)(inode_t *inode, kfile_t *file); // Here because linux defines it here
+
+    // Optional hook for drivers to perform cleanup code when a file is closed
+    // If this isn't present, the file will close normally and be freed
+    // This is equivalent to linux's file->release() function
+    status_t (*close)(kfile_t *file);
+
     // Iterate over the contents of a directory: querying the fs driver instead of the dirent cache
     // Returns the number of buffer entries written
     // TODO(Adin): Change this so it doesn't need the userspace buffer to be passed
@@ -130,5 +136,7 @@ dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num);
 kfile_t *_vfs_allocate_file(void);
 super_block_t *_vfs_allocate_superblock(void);
 dirent_t *_vfs_allocate_dirent(void);
+
+void _vfs_free_file(kfile_t *file);
 
 #endif // #ifndef __VFS_H__

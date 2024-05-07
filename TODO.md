@@ -3,7 +3,7 @@
 - [x] System to register filesystems
 - [ ] Syscalls
   - [x] open
-  - [ ] close
+  - [x] close
   - [ ] read
   - [ ] write
   - [ ] listdir

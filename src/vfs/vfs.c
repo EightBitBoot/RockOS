@@ -75,24 +75,6 @@ status_t _vfs_register_fs_type(fs_type_t *filesystem)
     return S_OK;
 }
 
-kfile_t *_vfs_allocate_file(void)
-{
-    // TODO(Adin): Reference counting
-    return slab_alloc(&__kfile_cache, SC_ALLOC_ZERO_MEM);
-}
-
-super_block_t *_vfs_allocate_superblock(void)
-{
-    // TODO(Adin): Reference counting
-    return slab_alloc(&__superblock_cache, SC_ALLOC_ZERO_MEM);
-}
-
-dirent_t *_vfs_allocate_dirent(void)
-{
-    // TODO(Adin): Reference counting
-    return slab_alloc(&__dirent_cache, SC_ALLOC_ZERO_MEM);
-}
-
 dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num)
 {
     if(
@@ -119,6 +101,29 @@ dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num)
     // TODO(Adin): Assign root_dirent's parent
 
     return root_dirent;
+}
+
+kfile_t *_vfs_allocate_file(void)
+{
+    // TODO(Adin): Reference counting
+    return slab_alloc(&__kfile_cache, SC_ALLOC_ZERO_MEM);
+}
+
+super_block_t *_vfs_allocate_superblock(void)
+{
+    // TODO(Adin): Reference counting
+    return slab_alloc(&__superblock_cache, SC_ALLOC_ZERO_MEM);
+}
+
+dirent_t *_vfs_allocate_dirent(void)
+{
+    // TODO(Adin): Reference counting
+    return slab_alloc(&__dirent_cache, SC_ALLOC_ZERO_MEM);
+}
+
+void _vfs_free_file(kfile_t *file)
+{
+    slab_free(&__kfile_cache, file);
 }
 
 // --------------------------------- File Private ---------------------------------

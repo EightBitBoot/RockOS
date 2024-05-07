@@ -6,6 +6,7 @@
 ** @brief	System call implementations
 */
 
+#include "params.h"
 #include "util/kstring.h"
 #include "vfs/vfs.h"
 #define SP_KERNEL_SRC
@@ -896,7 +897,24 @@ SYSIMPL(fopen)
 
 SYSIMPL(fclose)
 {
+	fd_t fd = ARG(_current, 1);
 
+	if(fd < 0 || fd >= VFS_MAX_OPEN_FILES || _current->open_files[fd] == NULL) {
+		RET(_current) = E_BAD_PARAM;
+		return;
+	}
+
+	// TODO(Adin): Reference counting
+
+	kfile_t *file = _current->open_files[fd];
+	if(file->kf_ops && file->kf_ops->close) {
+		file->kf_ops->close(file);
+	}
+
+	_current->open_files[fd] = NULL;
+	_vfs_free_file(file);
+
+	RET(_current) = E_SUCCESS;
 }
 
 SYSIMPL(fread)
