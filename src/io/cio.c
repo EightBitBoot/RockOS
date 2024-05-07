@@ -648,9 +648,7 @@ int __cio_getchar( void ) {
 
     c = *next_char & BMASK8;
     next_char = __c_increment( next_char );
-    if( c != EOT ) {
-        __cio_putchar( c );
-    }
+
     return c;
 }
 
