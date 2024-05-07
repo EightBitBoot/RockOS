@@ -2,16 +2,25 @@
 #include "testfs.h"
 
 #include "common.h"
+#include "io/cio.h"
+#include "kern/kdefs.h"
 #include "vfs/vfs.h"
 #include "libc/lib.h"
 
 #include "bogus_data.h"
 
+#include "usr/testfs_usr.h"
+
 status_t testfs_open(inode_t *inode, kfile_t *file);
 status_t testfs_close_file(kfile_t *file);
+status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
+
 int testfs_iterate_shared(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count);
 status_t testfs_lookup(inode_t *inode, dirent_t *dirent);
+
 dirent_t *testfs_mount(fs_type_t *fs_type);
+
+#define FILE_TO_BOGUS_NODE(file_ptr) ((bogus_node_t *)(file_ptr)->kf_priv)
 
 // -------------------------------------------------------
 // Quick! It's the OPs!
@@ -24,6 +33,7 @@ static inode_ops_t testfs_inode_dir_ops = {
 static kfile_ops_t testfs_file_ops = {
     .open = testfs_open,
     .close = testfs_close_file,
+    .ioctl = testfs_ioctl,
 };
 static kfile_ops_t testfs_dir_ops = {
     .open = testfs_open,
@@ -85,6 +95,24 @@ status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
 status_t testfs_close_file(kfile_t *file)
 {
     __cio_printf("Closing testfs file (in driver) %s\n", ((bogus_node_t *)file->kf_priv)->name);
+
+    return S_OK;
+}
+
+status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data)
+{
+    if(action != TESTFS_SAY_HI) {
+        return S_BAD_ACTION;
+    }
+
+    if(!data) {
+        return S_BAD_PARAM;
+    }
+
+    __cio_printf(
+        "Test fs says hi from file %s. The caller of fioctl would also you to know %s\n",
+        FILE_TO_BOGUS_NODE(file)->name, (char *)data
+    );
 
     return S_OK;
 }

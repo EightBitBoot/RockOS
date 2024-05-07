@@ -129,6 +129,7 @@ enum datum_e {
 #define E_NOT_SUPPORTED  (-9)
 #define E_ALREADY_OPEN   (-10)
 #define E_MAX_FILES_OPEN (-11)
+#define E_BAD_ACTION     (-12)
 
 // ----------------------------------------------------------
 // Predefined user process exit status values

@@ -3,6 +3,8 @@
 #include "usr/ulib.h"
 #include "libc/lib.h"
 
+#include "usr/testfs_usr.h"
+
 #define PRINT_BUFFER_LEN 256
 char print_buffer[PRINT_BUFFER_LEN] = {};
 
@@ -67,12 +69,51 @@ void test_rw_locks(void)
     fclose(fd8);
 }
 
+void test_fioctl(void)
+{
+    // Expected (plus 1 print from the testfs ioctl):
+    // res1: -9, res2: 0
+    // res3: -9, res4: -2
+    // res5: -9, res6: -12
+    // res7: -9, res8: -12
+
+    fd_t etc_fd = fopen("/etc", O_READ, 0);
+    fd_t libgdi_fd = fopen("/usr/lib/libgdi.so", O_READ, 0);
+
+    printf("etc_fd: %d, libgdi_fd: %d\n", etc_fd, libgdi_fd);
+
+    char *message = "butts";
+    int32_t res1 = fioctl(etc_fd, TESTFS_SAY_HI, message);
+    int32_t res2 = fioctl(libgdi_fd, TESTFS_SAY_HI, message);
+
+    printf("res1: %d, res2: %d\n", res1, res2);
+
+    int32_t res3 = fioctl(etc_fd, TESTFS_SAY_HI, NULL);
+    int32_t res4 = fioctl(libgdi_fd, TESTFS_SAY_HI, NULL);
+
+    printf("res3: %d, res4: %d\n", res3, res4);
+
+    int32_t res5 = fioctl(etc_fd, 2, message);
+    int32_t res6 = fioctl(libgdi_fd, 2, message);
+
+    printf("res5: %d, res6: %d\n", res5, res6);
+
+    int32_t res7 = fioctl(etc_fd, 2, NULL);
+    int32_t res8 = fioctl(libgdi_fd, 2, NULL);
+
+    printf("res7: %d, res8: %d\n", res7, res8);
+
+    fclose(etc_fd);
+    fclose(libgdi_fd);
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
 
     // test_fd_assignment();
-    test_rw_locks();
+    // test_rw_locks();
+    test_fioctl();
 
     return 0;
 }

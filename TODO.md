@@ -9,18 +9,23 @@
   - [ ] listdir
   - [ ] create
   - [ ] delete
-  - [ ] ioctl
+  - [x] ioctl
+
   - [ ] move / rename (optional)
   - [ ] chdir (ability to change cwd of process; not mentioned in presentation but probably necessary)
-  - [ ] mount (optional)
+  - [ ] getcwd (get the absolute path of a process's cwd; not mentioned in presentation but probably useful for the shell)
   - [ ] stat (optional)
+  - [ ] mount (optional)
+- [ ] "." and ".." (relative path) support in namey()
 - [x] Read and write locks
 - [ ] direntry cache
 - [x] Open file table in PCBs
 - [ ] Error checking in all major functions
+- [ ] _SMALL_ pass fopen flags to open driver call?
 - [ ] Documentation
 - [ ] Mounting system
 - [ ] Buddy system allocator (semi optional: discussed in presentation but "in the middle of implementing it" so can probaly get away with using a slab cache for filenames)
+- [ ] _REALLY FUCKING BASIC_ (maybe even read-only) sysfs
 - [ ] stdin / stdout system
   - [ ] Automatic opening of first two fds (0 and 1)
   - [ ] Hooking into tty driver

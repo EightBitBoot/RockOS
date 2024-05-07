@@ -129,6 +129,11 @@ struct kfile_ops
     // Returns the number of buffer entries written
     // TODO(Adin): Change this so it doesn't need the userspace buffer to be passed
     int (*iterate_shared)(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count); // TODO(Adin): Add more params as needed
+
+    // A generic, optional callback to perform a specific action on a file (or the inode it represents)
+    // This is completely fs driver dependent and, unlike posix, there are no default actions; meaning if the
+    // driver doesn't support it, the fioctl syscall will return E_NOT_SUPPORTED.
+    status_t (*ioctl)(kfile_t *file, uint32_t action, void *data);
 };
 
 // -----------------------------------------------------------------------------

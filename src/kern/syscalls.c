@@ -857,6 +857,32 @@ SYSIMPL(vgawritepixel)
 
 // ----------------------------- VFS Calls -----------------------------
 
+#define IS_BAD_FD(fd) \
+	((fd) < 0 || (fd) >= VFS_MAX_OPEN_FILES || _current->open_files[(fd)] == NULL)
+
+static int32_t __status_to_sys_ret(status_t status)
+{
+	switch(status) {
+		case S_NOT_SUPP:
+			return E_NOT_SUPPORTED;
+
+		case S_BAD_PARAM:
+			return E_BAD_PARAM;
+
+		case S_BAD_ACTION:
+			return E_BAD_ACTION;
+
+		case S_OK:
+			return E_SUCCESS;
+
+		default:
+			return E_FAILURE;
+	}
+
+	// Should never get here but eh, what the hell
+	return E_FAILURE;
+}
+
 SYSIMPL(fopen)
 {
 	char *path     = (char *) ARG(_current, 1);
@@ -908,10 +934,10 @@ SYSIMPL(fopen)
 	file->kf_ops = target->i_file_ops;
 	file->kf_mode = mode;
 
-	status_t open_result = file->kf_ops->open(target, file);
-	if(open_result) {
+	status_t open_status = file->kf_ops->open(target, file);
+	if(open_status) {
 		_vfs_free_file(file);
-		RET(_current) = E_FAILURE;
+		RET(_current) = __status_to_sys_ret(open_status);
 		return;
 	}
 
@@ -934,7 +960,7 @@ SYSIMPL(fclose)
 {
 	fd_t fd = ARG(_current, 1);
 
-	if(fd < 0 || fd >= VFS_MAX_OPEN_FILES || _current->open_files[fd] == NULL) {
+	if(IS_BAD_FD(fd)) {
 		RET(_current) = E_BAD_PARAM;
 		return;
 	}
@@ -943,6 +969,8 @@ SYSIMPL(fclose)
 
 	kfile_t *file = _current->open_files[fd];
 	if(file->kf_ops && file->kf_ops->close) {
+		// TODO(Adin): If this fails, how should it be reported to
+		// 			   userspace?
 		file->kf_ops->close(file);
 	}
 
@@ -995,7 +1023,24 @@ SYSIMPL(fdelete)
 
 SYSIMPL(fioctl)
 {
+	fd_t fd         = ARG(_current, 1);
+	uint32_t action = ARG(_current, 2);
+	void *data      = (void *) ARG(_current, 3);
 
+	if(IS_BAD_FD(fd)) {
+		RET(_current) = E_BAD_PARAM;
+		return;
+	}
+
+	kfile_t *target = _current->open_files[fd];
+	if(!target->kf_ops || !target->kf_ops->ioctl) {
+		RET(_current) = E_NOT_SUPPORTED;
+		return;
+	}
+
+	status_t ioctl_status = target->kf_ops->ioctl(target, action, data);
+
+	RET(_current) = __status_to_sys_ret(ioctl_status);
 }
 
 
