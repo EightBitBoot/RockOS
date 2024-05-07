@@ -264,7 +264,6 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             break;
         // Base Foreground Colors
         case 0x31: // 1
-            // TODO: shows up as gray if we have a black background, maybe different with a colored background?
             active_color = vga_text_fg(VGA_TEXT_COLOR_BLACK);
             __cio_printf("[VGA] text color test: (not) black text\n");
             break;
@@ -428,7 +427,7 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
         case 0x2d: // -: Clear Screen (SLOW)
             _vga_clear_screen();
             break;
-        case 0x3d: // =: Draw X
+        case 0x3d: // =: Draw blue/green X
             draw_x();
             break;
         case 0x5c: // \: Draw Gradient
