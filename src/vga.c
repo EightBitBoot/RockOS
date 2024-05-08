@@ -245,7 +245,11 @@ void draw_test_pattern(void) {
 	}
 	for (y = 0; y < g_ht; y++) {
         for (x = 0; x < g_wd; x++) {
-            g_write_pixel(x, y, (x/w_frac)+(16*(y/h_frac)));
+			if (vga_mode == 1) {
+				g_write_pixel(x, y, x/w_frac);
+			} else if (vga_mode == 2) {
+				g_write_pixel(x, y, (x/w_frac)+(15*(y/h_frac)));
+			}
         }
     }
 }
@@ -312,10 +316,6 @@ static void write_color_palette(uint8_t *palette, unsigned num_colors) {
 	__outb(0x3C8,0);
 	for (i = 0; i < num_colors*3; i++) {
 		__outb(0x3C9,palette[i]);
-		if (i % 3 == 0) {
-			sprint(buf, "\r\ni:%d,rgb:%d,%d,%d", i, palette[i], palette[i+1], palette[i+2]);
-			_sio_puts(buf);
-		}
 	}
 }
 
