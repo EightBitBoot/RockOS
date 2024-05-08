@@ -33,7 +33,7 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("shutdown", int_cmd_shutdown, 0),
     COMMAND_ENTRY("reboot", int_cmd_reboot, 0),
     COMMAND_ENTRY("ls", int_cmd_ls, 0),
-    COMMAND_ENTRY("test_vfs", test_vfs, 1),
+    // COMMAND_ENTRY("test_vfs", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
 
@@ -56,6 +56,8 @@ USERMAIN(wtsh_main)
 {
     char in_buf[2] = {};
     char line_buffer[LINE_BUFFER_SIZE] = {};
+    char out[32] = {};
+    bool_t cmd_found = 0;
     uint8_t cursor_pos = 0;
 
     init_state(&g_shell_state);
@@ -76,13 +78,14 @@ USERMAIN(wtsh_main)
         } else if(c == 0x0A) { // Enter key
             line_buffer[cursor_pos] = '\0';
             cwritech('\n');
-
+            cmd_found = 0;
             // todo: do the thing
             for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
                 command_entry_t cmd = g_commands[i];
 
                 if (strcmp(cmd.name, line_buffer) == 0) {
                     if(cmd.is_subprocess) {
+                        cmd_found = 1;
                         int32_t pid = spawn(cmd.entrypoint, -1, NULL);
                         waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
                     }
@@ -92,6 +95,13 @@ USERMAIN(wtsh_main)
                     break;
                 }
             }
+
+            if (!cmd_found && line_buffer[0] != '\0') {
+                sprint(out, "Command '%s' not found!\n", line_buffer);
+                cwrites(out);
+            }
+
+            
 
             in_buf[0] = 0;
             cursor_pos = 0;
