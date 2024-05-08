@@ -214,12 +214,15 @@ static void write_pixel8(unsigned x, unsigned y, unsigned c)
 
 void _vga_clear_screen(void) {
     unsigned x, y;
+	unsigned mode = vga_mode;
 
 /* clear screen */
 	for (y = 0; y < 4; y++) {
 		set_plane(y);
 		__memclr((unsigned *) 0xA0000, 64000);
 	}
+
+	_vga_set_mode(mode);
 }
 
 void draw_x(void) {
