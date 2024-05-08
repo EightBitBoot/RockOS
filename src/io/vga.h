@@ -137,6 +137,8 @@ extern uint8_t vga_image_adin[28260];
 
 extern uint8_t vga_image_obiwan[43200];
 
+extern uint8_t vga_image_coyote[56000];
+
 extern uint8_t _vga_palette_16[256];
 
 extern uint8_t _vga_palette_256[768];

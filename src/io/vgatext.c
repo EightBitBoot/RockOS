@@ -467,6 +467,9 @@ void _vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
         case 0x5d: // ]: Draw Obi-Wan
             __vga_draw_image(320, 135, 0, 0, vga_image_obiwan);
             break;
+        case 0x27: // ': Draw Coyote
+            __vga_draw_image(280, 200, 20, 0, vga_image_coyote);
+            break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
