@@ -114,15 +114,15 @@ static bool_t _acpi_locate_sdts(void) {
 static bool_t _acpi_parse_dsdt(struct acpi_dsdt *dsdt) {
 	if (dsdt == NULL) return false;
 
+	// Signature
+        if (__memcmp(dsdt->header.signature, ACPI_DSDT_SIGNATURE, sizeof(ACPI_DSDT_SIGNATURE)) != 0) {
+                _acpi_warn("DSDT invalid signature");
+                return false;
+        }
+
 	// DSDT checksum
 	if (!_acpi_validate_sdt(&dsdt->header)) {
 		_acpi_warn("DSDT checksum invalid");
-		return false;
-	}
-
-	// Signature
-	if (__memcmp(dsdt->header.signature, ACPI_DSDT_SIGNATURE, sizeof(ACPI_DSDT_SIGNATURE)) != 0) {
-		_acpi_warn("DSDT invalid signature");
 		return false;
 	}
 
