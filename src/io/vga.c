@@ -36,24 +36,14 @@ uint8_t _vga_attr_read(unsigned int index) {
     // Save current value of Address/Data Register
     uint8_t retval = (uint8_t) __inb(VGA_ATTR_ADDR_REG_DATA_RO);
     _reset_flipflop();
-    sprint(buf, "var oi: 0x%x, mi: 0x%x, r: 0x%x\r\n", orig_index, mod_index, retval);
-    _sio_puts(buf);
     return retval;
 }
 
 void _vga_attr_write(unsigned int index, uint8_t data) {
     // Read value of Address/Data registers
-    // _reset_flipflop();
-    // int orig_addr_reg = __inb(VGA_ATTR_ADDR_REG_RW);
-    // int orig_addr_dat = _vga_attr_read(index);
     _reset_flipflop();
     int orig_index = __inb(VGA_ATTR_ADDR_REG_RW);
-    char buf[256];
-    sprint(buf, "vaw i: 0x%x, d: 0x%x, o: 0x%x\r\n", index, data, orig_index);
-    _sio_puts(buf);
     int mod_index = (orig_index & 0b11100000) | (index & 0b00011111);
-    sprint(buf, "vaw: mi: 0x%x\r\n", mod_index);
-    _sio_puts(buf);
     _reset_flipflop();
     __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
     __outb(VGA_ATTR_ADDR_REG_RW, data);
@@ -169,15 +159,15 @@ static void _write_pixel_noop(unsigned x, unsigned y, unsigned c) {
 }
 
 void (*__vga_write_pixel)(unsigned, unsigned, unsigned) = _write_pixel_noop;
-static unsigned int g_wd = 0;
-static unsigned int g_ht = 0;
-static unsigned int g_c = 0;
+static unsigned int _current_width = 0;
+static unsigned int _current_height = 0;
+static unsigned int _current_colors = 0;
 
 static void _write_pixel4p(unsigned x, unsigned y, unsigned c)
 {
 	unsigned wd_in_bytes, off, mask, p, pmask;
 
-	wd_in_bytes = g_wd / 8;
+	wd_in_bytes = _current_width / 8;
 	off = wd_in_bytes * y + x / 8;
 	x = (x & 7) * 1;
 	mask = 0x80 >> x;
@@ -198,7 +188,7 @@ static void _write_pixel8(unsigned x, unsigned y, unsigned c)
 	unsigned wd_in_bytes;
 	unsigned off;
 
-	wd_in_bytes = g_wd;
+	wd_in_bytes = _current_width;
 	off = wd_in_bytes * y + x;
 	_vpokeb(off, c);
 }
@@ -219,9 +209,9 @@ void __vga_clear_screen(void) {
 void _draw_x(void) {
 	unsigned x, y;
 
-	for(y = 0; y < g_ht; y++) {
-		__vga_write_pixel((g_wd - g_ht) / 2 + y, y, 1);
-		__vga_write_pixel((g_ht + g_wd) / 2 - y, y, 2);
+	for(y = 0; y < _current_height; y++) {
+		__vga_write_pixel((_current_width - _current_height) / 2 + y, y, 1);
+		__vga_write_pixel((_current_height + _current_width) / 2 - y, y, 2);
 	}
 }
 
@@ -229,14 +219,14 @@ void __vga_draw_test_pattern(void) {
     unsigned x, y;
     unsigned w_frac, h_frac;
 	if (_vga_mode == 1) {
-		w_frac = g_wd/16;
+		w_frac = _current_width/16;
 		h_frac = 1;
 	} else if (_vga_mode == 2) {
-		w_frac = g_wd/16;
-		h_frac = g_ht/16;
+		w_frac = _current_width/16;
+		h_frac = _current_height/16;
 	}
-	for (y = 0; y < g_ht; y++) {
-        for (x = 0; x < g_wd; x++) {
+	for (y = 0; y < _current_height; y++) {
+        for (x = 0; x < _current_width; x++) {
 			if (_vga_mode == 1) { // Draw a Test Pattern consisting of vertical color bars
 				__vga_write_pixel(x, y, x/w_frac);
 			} else if (_vga_mode == 2) { // Draw a Test Pattern depicting the 256-color Palette
@@ -303,15 +293,14 @@ static void _write_color_palette(uint8_t *palette, unsigned num_colors) {
 	unsigned i,r,g,b;
 	char buf[32];
 
-	__outb(0x3C6,0xFF);
-	__outb(0x3C8,0);
+	__outb(VGA_DAC_WRITE_INDEX, 0);
 	for (i = 0; i < num_colors*3; i++) {
-		__outb(0x3C9,palette[i]);
+		__outb(VGA_DAC_DATA ,palette[i]);
 	}
 }
 
 static void _restore_font(void) {
-	_write_font(g_8x16_font, 16);
+	_write_font(_vga_font_default, 16);
 }
 
 /**
@@ -321,41 +310,40 @@ static void _restore_font(void) {
  * 2 sets 256-color 320x200 Graphics Mode
 */
 void __vga_set_mode(unsigned int target_mode) {
-    // uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
     switch(target_mode) {
         case 0:
 			_sio_puts("\r\nRestore Font\r\n");
-			_vga_set_registers(g_640x480x16); // I don't know why I need to change to 16-color mode to get the font to restore correctly - judging by the artifacts, it might be something to do with planar?
+			_vga_set_registers(_vga_mode_640x480x16_graphics); // I don't know why I need to change to 16-color mode to get the font to restore correctly - judging by the artifacts, it might be something to do with planar?
 			_restore_font();
 			_sio_puts("\r\nRestore Color Palette\r\n");
-			_write_color_palette(g_16_color_palette, 64);
+			_write_color_palette(_vga_palette_16, 64);
             _vga_mode = 0;
 			__vga_write_pixel = _write_pixel_noop;
-			g_wd = 0;
-			g_ht = 0;
-			g_c = 16;
+			_current_width = 0;
+			_current_height = 0;
+			_current_colors = 16;
             _sio_puts("\r\nEnter Text Mode\r\n");    
-            _vga_set_registers(g_80x25_text);
+            _vga_set_registers(_vga_mode_80x25_text);
             __cio_clearscreen();
             break;
         case 1:
             _vga_mode = 1;
 			__vga_write_pixel = _write_pixel4p;
-			g_wd = 640;
-			g_ht = 480;
-			g_c = 16;
+			_current_width = 640;
+			_current_height = 480;
+			_current_colors = 16;
             _sio_puts("\r\nEnter 16-color 640x480 Graphics Mode\r\n");
-            _vga_set_registers(g_640x480x16);
+            _vga_set_registers(_vga_mode_640x480x16_graphics);
             break;
 		case 2:
 			_vga_mode = 2;
 			__vga_write_pixel = _write_pixel8;
-			g_wd = 320;
-			g_ht = 200;
-			g_c = 256;
-			_write_color_palette(g_256_color_palette, 256);
+			_current_width = 320;
+			_current_height = 200;
+			_current_colors = 256;
+			_write_color_palette(_vga_palette_256, 256);
 			_sio_puts("\r\nEnter 256-color 320x200 Graphics Mode\r\n");
-			_vga_set_registers(g_320x200x256);
+			_vga_set_registers(_vga_mode_320x200x256_graphics);
 			break;
     }
 }

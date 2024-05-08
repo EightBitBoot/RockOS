@@ -36,10 +36,10 @@
 #define VGA_ATTR_HORIZ_PEL_PAN 0x13
 // Attribute: Color Select is Index 14
 #define VGA_ATTR_COLOR_SEL 0x14
-// All VGA Ports needed to change modes
+// All VGA Ports needed for current functionality
 #define	VGA_AC_INDEX		0x3C0
 #define	VGA_AC_WRITE		0x3C0
-#define	VGA_AC_READ		0x3C1
+#define	VGA_AC_READ		    0x3C1
 #define	VGA_MISC_WRITE		0x3C2
 #define VGA_SEQ_INDEX		0x3C4
 #define VGA_SEQ_DATA		0x3C5
@@ -49,9 +49,8 @@
 #define	VGA_MISC_READ		0x3CC
 #define VGA_GC_INDEX 		0x3CE
 #define VGA_GC_DATA 		0x3CF
-/*			COLOR emulation		MONO emulation */
-#define VGA_CRTC_INDEX		0x3D4		/* 0x3B4 */
-#define VGA_CRTC_DATA		0x3D5		/* 0x3B5 */
+#define VGA_CRTC_INDEX		0x3D4
+#define VGA_CRTC_DATA		0x3D5
 #define	VGA_INSTAT_READ		0x3DA
 
 #define	VGA_NUM_SEQ_REGS	5
@@ -70,11 +69,11 @@ unsigned int __vga_get_mode(void);
 
 void __vga_set_mode(unsigned int graphics_text_select);
 
-extern unsigned char g_80x25_text[];
+extern unsigned char _vga_mode_80x25_text[];
 
-extern unsigned char g_640x480x16[];
+extern unsigned char _vga_mode_640x480x16_graphics[];
 
-extern unsigned char g_320x200x256[];
+extern unsigned char _vga_mode_320x200x256_graphics[];
 
 void _dump_regs(unsigned char *regs);
 
@@ -90,22 +89,22 @@ void __vga_draw_image(uint16_t im_w, uint8_t im_h, uint8_t off_x, uint8_t off_y,
 
 extern void (*__vga_write_pixel)(unsigned, unsigned, unsigned);
 
-extern unsigned char g_80x25_text[61];
+extern unsigned char _vga_mode_80x25_text[61];
 
-extern unsigned char g_640x480x16[61];
+extern unsigned char _vga_mode_640x480x16_graphics[61];
 
-extern unsigned char g_320x200x256[61];
+extern unsigned char _vga_mode_320x200x256_graphics[61];
 
-extern unsigned char g_8x16_font[4096];
+extern unsigned char _vga_font_default[4096];
 
-extern uint8_t g_rick[57600];
+extern uint8_t vga_image_rick[57600];
 
-extern uint8_t g_adin[28260];
+extern uint8_t vga_image_adin[28260];
 
-extern uint8_t g_obiwan[43200];
+extern uint8_t vga_image_obiwan[43200];
 
-extern uint8_t g_16_color_palette[256];
+extern uint8_t _vga_palette_16[256];
 
-extern uint8_t g_256_color_palette[768];
+extern uint8_t _vga_palette_256[768];
 
 #endif

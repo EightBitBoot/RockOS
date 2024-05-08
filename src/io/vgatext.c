@@ -437,13 +437,13 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             __vga_draw_test_pattern();
             break;
         case 0x08: // Backspace: Draw Rick Astley
-            __vga_draw_image(320, 180, 0, 0, g_rick);
+            __vga_draw_image(320, 180, 0, 0, vga_image_rick);
             break;
         case 0x5b: // [: Draw Baby Adin
-            __vga_draw_image(157, 180, 0, 0, g_adin);
+            __vga_draw_image(157, 180, 0, 0, vga_image_adin);
             break;
         case 0x5d: // ]: Draw Obi-Wan
-            __vga_draw_image(320, 135, 0, 0, g_obiwan);
+            __vga_draw_image(320, 135, 0, 0, vga_image_obiwan);
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
