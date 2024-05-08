@@ -204,6 +204,64 @@ void test_read(void)
     fclose(etc_fd);
 }
 
+#define TEST_FSEEK_PRINT(fd_name) \
+    printf(#fd_name ": %d, cursor: %d, status: %d\n", fd_name, cursor, status);
+
+void test_fseek(void)
+{
+    fd_t passwd_fd = fopen("/etc/passwd", O_READ, 0);
+    int32_t status = -74; // Bogus value to ensure fseek is setting it properly
+    uint32_t cursor = 0;
+
+    // Beginning
+    cursor = fseek(passwd_fd, 0, SEEK_SET, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // End
+    cursor = fseek(passwd_fd, 0, SEEK_END, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Curr
+    cursor = fseek(passwd_fd, 0, SEEK_CURR, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Negative from curr
+    cursor = fseek(passwd_fd, -3, SEEK_CURR, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Positive from curr
+    cursor = fseek(passwd_fd, 2, SEEK_CURR, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Off beginning of file
+    fseek(passwd_fd, 0, SEEK_SET, NULL);
+    cursor = fseek(passwd_fd, -1, SEEK_CURR, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Off end of file
+    fseek(passwd_fd, 0, SEEK_END, NULL);
+    cursor = fseek(passwd_fd, 1, SEEK_CURR, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Negative from end of file
+    cursor = fseek(passwd_fd, -2, SEEK_END, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Positive from start of file
+    cursor = fseek(passwd_fd, 3, SEEK_SET, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Negative off beginning of file from end of file
+    cursor = fseek(passwd_fd, -8, SEEK_SET, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    // Positive off end of file from beginning of file
+    cursor = fseek(passwd_fd, 8, SEEK_SET, &status);
+    TEST_FSEEK_PRINT(passwd_fd);
+
+    fclose(passwd_fd);
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
@@ -211,7 +269,8 @@ USERMAIN(test_vfs)
     // test_fd_assignment();
     // test_rw_locks();
     // test_fioctl();
-    test_read();
+    // test_read();
+    test_fseek();
 
     return 0;
 }

@@ -190,7 +190,7 @@ unsigned int vgatextgetactivecolor( void );
 ** usage:   vgatextsetactivecolor( color )
 **
 ** @param color   the color to set as active
-** 
+**
 ** @returns void
 */
 void vgatextsetactivecolor( unsigned int color );
@@ -267,6 +267,8 @@ int32_t fcreate(char *path, uint32_t flags);
 int32_t fdelete(char *path, uint32_t flags);
 
 int32_t fioctl(fd_t fd, uint32_t action, void *data);
+
+uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
 
 /**
 ** bogus - a nonexistent system call, to test our syscall ISR

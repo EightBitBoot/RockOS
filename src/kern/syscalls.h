@@ -54,9 +54,10 @@
 #define  SYS_fcreate                27
 #define  SYS_fdelete                28
 #define  SYS_fioctl                 29
+#define  SYS_fseek                  30
 
 // UPDATE THIS DEFINITION IF MORE SYSCALLS ARE ADDED!
-#define N_SYSCALLS      30
+#define N_SYSCALLS      31
 
 // dummy system call code for testing our ISR
 #define SYS_bogus       0xbad

@@ -1095,6 +1095,85 @@ SYSIMPL(fioctl)
 	RET(_current) = __status_to_sys_ret(ioctl_status);
 }
 
+// uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
+SYSIMPL(fseek)
+{
+	fd_t fd         = ARG(_current, 1);
+	int32_t offset  = ARG(_current, 2);
+	uint32_t whence = ARG(_current, 3);
+	int32_t *status = (int32_t *) ARG(_current, 4);
+
+	if(IS_BAD_FD(fd)) {
+		if(status) {
+			*status = E_BAD_PARAM;
+		}
+		RET(_current) = 0;
+		return;
+	}
+
+	kfile_t *target = _current->open_files[fd];
+
+	if(target->kf_inode->i_type == S_TYPE_DEV ||
+	   !target->kf_ops ||
+	   !target->kf_ops->get_length)
+	{
+		if(status) {
+			*status = E_NOT_SUPPORTED;
+		}
+		RET(_current) = 0;
+		return;
+	}
+
+	uint32_t file_len = target->kf_ops->get_length(target);
+
+	uint32_t new_base = 0;
+	switch(whence) {
+		case SEEK_CURR:
+			new_base = target->kf_rwhead;
+			break;
+
+		case SEEK_SET:
+			new_base = 0;
+			break;
+
+		case SEEK_END:
+			new_base = file_len;
+			break;
+
+		default:
+			RET(_current) = 0;
+			if(status) {
+				*status = E_BAD_PARAM;
+			}
+			return;
+	}
+
+	uint32_t new_rwhead = new_base + offset;
+
+	// Useful debugging print: do not remove
+	// __cio_printf(
+	// 	"old_rwhead: %u, offset: %d, new_base: %u, new_rwhead %u\n",
+	// 	target->kf_rwhead, offset, new_base, new_rwhead
+	// );
+
+	if((offset < 0 && new_rwhead > new_base) || // Underflow
+	   (offset > 0 && new_rwhead < new_base) || // Overflow
+	   (new_rwhead > file_len))					// rw head > file length
+	{
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_PARAM;
+		}
+		return;
+	}
+
+	target->kf_rwhead = new_rwhead;
+	RET(_current) = new_rwhead;
+	if(status) {
+		*status = __status_to_sys_ret(S_OK);
+	}
+}
+
 
 // The system call jump table
 //
@@ -1135,6 +1214,7 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_fcreate  ]              = _sys_fcreate,
 	[ SYS_fdelete  ]              = _sys_fdelete,
 	[ SYS_fioctl   ]              = _sys_fioctl,
+	[ SYS_fseek    ]              = _sys_fseek,
 
 };
 

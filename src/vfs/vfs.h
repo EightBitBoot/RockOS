@@ -139,7 +139,13 @@ struct kfile_ops
     // to support the fanciest fs drivers either) read / write heads are handled by the vfs instead of the fs driver itself. As a
     // consequence, the vfs passes the offset in instead of requesting it from the driver. In the case where the user is trying to
     // read off the end of the file, the fs driver should return an error status and set the number of bytes read to 0.
-     status_t (*read)(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
+    status_t (*read)(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
+
+    // Get the length of a file. This isn't _strictly_ required, but without it, fseek will fail (which is
+    // pretty unusual for a vfs) so you better implement it in your fs drivers. Yeah I'm looking at you. I
+    // see you. And I'm disappointed as hell. (This isn't needed or used for device files [they are
+    // automatically skipped in the fseek syscall])
+    uint32_t (*get_length)(kfile_t *file);
 };
 
 // -----------------------------------------------------------------------------

@@ -180,6 +180,10 @@ typedef int fd_t;
 #define S_TYPE_FILE (2U)
 #define S_TYPE_DEV  (3U)
 
+#define SEEK_CURR (0U)
+#define SEEK_SET  (1U)
+#define SEEK_END  (2U)
+
 /*
 ** Additional OS-only or user-only things
 */

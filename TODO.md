@@ -12,7 +12,7 @@
   - [x] ioctl
 
   - [ ] chdir (ability to change cwd of process; not mentioned in presentation but probably necessary)
-  - [ ] seek (not mentioned in the presentation, but probably necessary)
+  - [x] seek (not mentioned in the presentation, but probably necessary)
   - [ ] ftell (optional; redundant [with seek returning the new rw head position] but ridiculously easy to implement)
   - [ ] stat (not mentioned in the presentation, but probably necessary [_SPECIFICALLY_ for the shell to tell which file  s in the current directory it can navigate to])
       - Could also be part of listdir (above)

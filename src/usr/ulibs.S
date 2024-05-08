@@ -69,6 +69,7 @@ SYSCALL(flistdir)
 SYSCALL(fcreate)
 SYSCALL(fdelete)
 SYSCALL(fioctl)
+SYSCALL(fseek)
 
 /*
 ** This is a bogus system call; it's here so that we can test

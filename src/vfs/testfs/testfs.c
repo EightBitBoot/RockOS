@@ -15,6 +15,7 @@ status_t testfs_open(inode_t *inode, kfile_t *file);
 status_t testfs_close_file(kfile_t *file);
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
+uint32_t testfs_get_length(kfile_t *file);
 
 int testfs_iterate_shared(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count);
 status_t testfs_lookup(inode_t *inode, dirent_t *dirent);
@@ -38,6 +39,7 @@ static kfile_ops_t testfs_file_ops = {
     .close = testfs_close_file,
     .read = testfs_file_read,
     .ioctl = testfs_ioctl,
+    .get_length = testfs_get_length,
 };
 static kfile_ops_t testfs_dir_ops = {
     .open = testfs_open,
@@ -148,6 +150,12 @@ status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uin
 
     *num_read = num_actually_read;
     return result;
+}
+
+uint32_t testfs_get_length(kfile_t *file)
+{
+    // TODO(Adin): Adjust this for ram-backed, writable files
+    return __strlen(FILE_TO_BOGUS_NODE(file)->name);
 }
 
 static super_block_t *testfs_super_block = NULL;
