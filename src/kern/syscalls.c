@@ -1308,6 +1308,11 @@ SYSIMPL(ciosetcursorpos)
 	__cio_moveto((unsigned int) ARG(_current, 1), (unsigned int) ARG(_current, 2));
 }
 
+SYSIMPL(ciogetspecialdown)
+{
+	RET(_current) = __cio_getarrowdown();
+}
+
 
 // The system call jump table
 //
@@ -1351,6 +1356,7 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_fseek    ]              = _sys_fseek,
 	[ SYS_ciogetcursorpos ]		  = _sys_ciogetcursorpos,
 	[ SYS_ciosetcursorpos ]		  = _sys_ciosetcursorpos,
+	[ SYS_ciogetspecialdown ]    = _sys_ciogetspecialdown,
 
 };
 

@@ -73,6 +73,7 @@ SYSCALL(fseek)
 
 SYSCALL(ciogetcursorpos)
 SYSCALL(ciosetcursorpos)
+SYSCALL(ciogetspecialdown)
 
 /*
 ** This is a bogus system call; it's here so that we can test

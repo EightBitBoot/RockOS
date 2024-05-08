@@ -51,6 +51,7 @@ static unsigned int    scroll_max_x, scroll_max_y;
 static unsigned int    curr_x, curr_y;
 static unsigned int    min_x, min_y;
 static unsigned int    max_x, max_y;
+static unsigned int    arrow_pressed = 0;
 
 // pointer to input notification function
 static void (*__c_notify)(int);
@@ -124,6 +125,13 @@ void __cio_setscroll( unsigned int s_min_x, unsigned int s_min_y,
 void __cio_getpos( unsigned int *x, unsigned int *y) {
     *x = curr_x;
     *y = curr_y;
+}
+
+/*
+** Retrieve current arrow key pressed status
+*/
+unsigned int __cio_getarrowdown(void) {
+    return arrow_pressed;
 }
 
 /*
@@ -623,6 +631,13 @@ static void __c_keyboard_isr( int vector, int code ) {
 
     int data = __inb( KEYBOARD_DATA );
     int val  = __c_input_scan_code( data );
+
+    if (data == 0xE0 && val == 0xFFFFFFFF) {
+        arrow_pressed = 1;
+    }
+    if (data == 0xAA && val == 0xFFFFFFFF) {
+        arrow_pressed = 0;
+    }
 
     /*
 	 * __cio_printf( "** CIO kbd data 0x%02x val 0x%02x\n",

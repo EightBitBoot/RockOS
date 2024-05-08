@@ -109,6 +109,13 @@ void __cio_setscroll( unsigned int min_x, unsigned int min_y,
 void __cio_getpos( unsigned int *x, unsigned int *y);
 
 /*
+** Name:    __cio_getarrowdown
+**
+** Description: This gets whether an arrow key is currently being pressed
+*/
+unsigned int __cio_getarrowdown(void);
+
+/*
 ** Name:    __cio_moveto
 **
 ** Description: Moves the cursor to the specified position. (0,0) indicates

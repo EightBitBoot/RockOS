@@ -68,45 +68,59 @@ USERMAIN(wtsh_main)
         // I don't like busy loops but that's what happens when you have non-blocking i/o
         while(read(CHAN_CIO, in_buf, 2) == E_NO_DATA) {}
 
-	char c = in_buf[0];
-        if(IS_PRINTABLE(c)) {
-            line_buffer[cursor_pos] = c;
-            cwritech(c);
-
-            if(cursor_pos < LINE_BUFFER_SIZE - 1) {
-                cursor_pos++;
-            }
-        } else if(c == 0x0A) { // Enter key
-            line_buffer[cursor_pos] = '\0';
-            cwritech('\n');
-            cmd_found = 0;
-            // todo: do the thing
-            for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
-                command_entry_t cmd = g_commands[i];
-
-                if (strcmp(cmd.name, line_buffer) == 0) {
-                    cmd_found = 1;
-                    if(cmd.is_subprocess) {
-                        int32_t pid = spawn(cmd.entrypoint, -1, NULL);
-                        waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
-                    }
-                    else {
-                        cmd.entrypoint(0, NULL);
-                    }
-                    break;
+	    char c = in_buf[0];
+        if (ciogetspecialdown()) {
+            if (c == 0x34) { // Left arrow
+                if (cursor_pos > 0) {
+                    ciogetcursorpos(&x, &y);
+                    ciosetcursorpos(x-1, y);
+                    cursor_pos--;
                 }
+            } else if (c == 0x36) { // Right arrow
+                if (line_buffer[cursor_pos] != '\0') {
+                    ciogetcursorpos(&x, &y);
+                    ciosetcursorpos(x+1, y);
+                    cursor_pos++;
+                }
+            } else {
+                // sprint(out, "Unprintable Input: %02x\n", c);
+                // cwrites(out);
             }
-
-            if (!cmd_found && line_buffer[0] != '\0') {
-                sprint(out, "Command '%s' not found!\n", line_buffer);
-                cwrites(out);
-            }
-
-            
-
             in_buf[0] = 0;
-            cursor_pos = 0;
-            cwrites("wtsh> ");
+        } else if(c == 0x0A) { // Enter key
+                line_buffer[cursor_pos] = '\0';
+                cwritech('\n');
+                cmd_found = 0;
+                // todo: do the thing
+                for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
+                    command_entry_t cmd = g_commands[i];
+
+                    if (strcmp(cmd.name, line_buffer) == 0) {
+                        cmd_found = 1;
+                        if(cmd.is_subprocess) {
+                            int32_t pid = spawn(cmd.entrypoint, -1, NULL);
+                            waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
+                        }
+                        else {
+                            cmd.entrypoint(0, NULL);
+                        }
+                        break;
+                    }
+                }
+
+                if (!cmd_found && line_buffer[0] != '\0') {
+                    sprint(out, "Command '%s' not found!\n", line_buffer);
+                    cwrites(out);
+                }
+
+                
+
+                in_buf[0] = 0;
+                cursor_pos = 0;
+                for (uint8_t i = 0; i < LINE_BUFFER_SIZE; i++) {
+                    line_buffer[i] = '\0';
+                }
+                cwrites("wtsh> ");
         } else if (c == 0x08) { // Backspace
             if (cursor_pos > 0) {
                 cursor_pos--;
@@ -117,9 +131,13 @@ USERMAIN(wtsh_main)
                 cwritech(' ');
                 ciosetcursorpos(x-1, y);
             }
-        } else {
-            sprint(out, "Unprintable Input: %02x\n", c);
-            cwrites(out);
+        } else if (IS_PRINTABLE(c)) {
+            line_buffer[cursor_pos] = c;
+            cwritech(c);
+
+            if(cursor_pos < LINE_BUFFER_SIZE - 1) {
+                cursor_pos++;
+            }
         }
     }
 

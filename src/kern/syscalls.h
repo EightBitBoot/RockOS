@@ -58,9 +58,10 @@
 
 #define  SYS_ciogetcursorpos           31
 #define  SYS_ciosetcursorpos           32
+#define  SYS_ciogetspecialdown        33
 
 // UPDATE THIS DEFINITION IF MORE SYSCALLS ARE ADDED!
-#define N_SYSCALLS      33
+#define N_SYSCALLS      34
 
 // dummy system call code for testing our ISR
 #define SYS_bogus       0xbad

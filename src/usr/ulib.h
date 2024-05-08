@@ -274,6 +274,8 @@ void ciogetcursorpos(unsigned int *x, unsigned int *y);
 
 void ciosetcursorpos(unsigned int x, unsigned int y);
 
+unsigned int ciogetspecialdown(void);
+
 /**
 ** bogus - a nonexistent system call, to test our syscall ISR
 **
