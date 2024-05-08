@@ -1,17 +1,77 @@
+#include <acpi/acpi.h>
 #include <acpi/aml.h>
 #include <kern/support.h>
+#include <debug.h>
 #include <libc/lib.h>
 #include <io/cio.h>
 
 /**
+ * This method parses the DataRefObject AML rule. The top-level rule definition follows:
+ *
+ * 	DataRefObject := DataObject | ObjectReference
+ *
+ * @sa ACPI Specification (v6.5) Section 20.2.3 "Data Objects Encoding"
+ */
+static bool_t _acpi_aml_parse_datarefobject(uint8_t *aml, uint8_t *output) {
+	if (aml == NULL) {
+		_acpi_warn("passed NULL aml to DataRefObject parser");
+		return false;
+	}
+
+	/*** Parse DataObject ***/
+	// DataObject := ComputationalData | DefPackage | DefVarPackage
+
+	// TODO ComputationalData
+
+	// DefPackage
+	if (*aml == ACPI_AML_OP_PACKAGE) { // PackageOp := 0x12
+		// DefPackage := PackageOp PkgLength NumElements PackageElementList
+
+		// PackageOp
+		aml++;
+
+		// PkgLength (this is cursed)
+		uint32_t pkglength;
+		uint8_t n_bytes = (*aml) >> 6; // bits 6-7 are n bytes
+
+		if (n_bytes == 0) {
+			pkglength = (*(aml++)) & 63; // bits 0-5
+		} else {
+			pkglength = (*(aml++)) & 15; // bits 0-3
+			for (uint8_t i = 0; i < n_bytes; i++) {
+				pkglength = pkglength << 8;
+				pkglength += *(aml++);
+			}
+		}
+
+		// NumElements
+		uint8_t n_elements = *(aml++);
+
+		// PackageElementList
+		// TODO: Packages can store more than bytes, but we only need to parse bytes
+		if (*(aml++) != 0x0A) _acpi_warn("Expected ByteData but got unknown package data type");
+		for (int i = 0; i < n_elements; i++) {
+			output[i] = *(aml++);
+		}
+	}
+
+	// TODO: DefVarPackage
+
+	/*** TODO: Parse ObjectReference ***/
+
+	return false;
+}
+
+/**
  * This method parses the DefName AML rule. The top-level rule definition follows:
+ *
  * 	DefName := NameOp NameString DataRefObject
  *
  * @sa ACPI Specification (v6.5) Section 20.2.2 "Name Objects Encoding"
  */
-bool_t _acpi_aml_parse_defname(uint8_t *aml, char *expected) {
+static bool_t _acpi_aml_parse_defname(uint8_t *aml, char *expected, uint8_t *output) {
 	if (aml == NULL) {
-		__cio_printf("%s warn: passed NULL name to name op parser\n", __func__);
+		_acpi_warn("passed NULL aml to NameOp parser");
 		return false;
 	}
 
@@ -20,7 +80,7 @@ bool_t _acpi_aml_parse_defname(uint8_t *aml, char *expected) {
 	/*** Parse NameOp ***/
 	// NameOp := 0x08
 	if (*(aml++) != ACPI_AML_OP_NAME) {
-		__cio_printf("%s warn: passed non-name op to name op parser\n", __func__);
+		_acpi_warn("passed non-NameOp construction to NameOp parser");
 		return false;
 	}
 
@@ -32,45 +92,42 @@ bool_t _acpi_aml_parse_defname(uint8_t *aml, char *expected) {
 		// RootChar := ‘' and ‘' := 0x5C
 		// TODO: the ‘' should be ‘\', the spec is wrong. I emailed the UEFI forum to tell them about this.
 		case '\\':
-			// TODO: wtf is root path vs prefix path?
+			// TODO: use this for something, we don't need it for shutdown
+			_acpi_dbg("rootchar");
 			aml++;
-			//__cio_printf("root path\n");
 			break;
 		// PrefixPath := Nothing | <’^’ prefixpath>
 		case '^':
-			// TODO: wtf is root path vs prefix path?
 			aml++;
 			// Fall through to common prefix path handling logic
 		default:
-			//__cio_printf("default ");
-			// This is a prefix path, but we shouldn't have consumed a character
-			// Fall through to common prefix path handling logic
-			aml = aml; // ignore compiler error
+			// TODO: use this for something, we don't need it for shutdown
+			_acpi_dbg("prefixpath");
+
 	}
 
 	// NamePath := NameSeg | DualNamePath | MultiNamePath | NullName
 	uint8_t n_namesegs = 1;
 	if (*aml == 0x2E) { // DualNamePrefix := 0x2E
 		// DualNamePath := DualNamePrefix NameSeg NameSeg
-		//__cio_printf("dual name path!\n");
+		_acpi_dbg("Parsing DualNamePath");
 		aml++;
 		n_namesegs = 2;
 	} else if (*aml == 0x2F) { // MultiNamePrefix := 0x2F
 		// MultiNamePath := MultiNamePrefix SegCount NameSeg(SegCount)
-		//__cio_printf("multinamepath!\n");
+		_acpi_dbg("Parsing MultiNamePath");
 		aml++; // account for prefix
 		n_namesegs = *(aml++); // SegCount := ByteData
 	} else if (*aml == 0x00) { // NullName := 0x00
-		//__cio_printf("null name!\n");
+		_acpi_dbg("Parsing NullName");
 		// Check if the expected name is a null character, return result
 		return (*expected == '\0');
 	}
 
-	__cio_printf("n(%u): ", n_namesegs);
-
 	// NameSeg := <leadnamechar namechar namechar namechar>
 	// Notice that NameSegs shorter than 4 characters are filled with trailing underscores (‘_’s).
 	char nameseg[5] = {0};
+	bool_t namefound = false;
 	for (uint8_t _ = 0; _ < n_namesegs; _++) {
 		for (uint8_t j = 0; j < 4; j++) {
 			char c = *(aml++);
@@ -82,50 +139,43 @@ bool_t _acpi_aml_parse_defname(uint8_t *aml, char *expected) {
 			bool_t namechar = digitchar || leadnamechar; // NameChar := DigitChar | LeadNameChar
 
 			if (j == 0 && !leadnamechar) {
-				//__cio_printf("warn %s: leadchar cannot be %c (0x%x)\n", __func__, c, c);
+				_acpi_warn("invalid leadchar detected");
 				// TODO: how to handle?
 			} else if (!namechar) {
-				//__cio_printf("warn %s: namechar cannot be %c (0x%x)\n", __func__, c, c);
+				_acpi_warn("invalid namechar detected");
 				// TODO: how to handle?
 			}
 
 			nameseg[j] = c;
 		}
 
-		__cio_printf("%s, ", nameseg);
-
+		_acpi_dbg("Found name '%s'", nameseg);
 		if (__strcmp(nameseg, expected) == 0) {
-			return true;
+			_acpi_dbg("Found match for %s", nameseg);
+			namefound = true;
 		}
 	}
 
-	__cio_printf(".\n");
+	if (!namefound) return false;
 
-	// TODO: either parse or how do we tell parser which character we consumed last?
-	/*** TODO: Parse DataRefObject ***/
+	/*** Parse DataRefObject ***/
+	_acpi_aml_parse_datarefobject(aml++, output);
 
-	return false;
+	return true;
 }
 
-bool_t _acpi_aml_find_value(uint8_t *start, uint32_t length, char *key) {
+bool_t _acpi_aml_find_value(uint8_t *start, uint32_t length, char *key, uint8_t *output) {
 	for (uint32_t i = 0; i < length; i++) {
 		uint8_t c = start[i];
 
 		switch (c) {
 			// DefName := NameOp NameString DataRefObject
 			case ACPI_AML_OP_NAME:
-				// TODO: print detected NameOp
-				if (_acpi_aml_parse_defname((start + i), key)) {
-					__cio_printf("\n\n\nFound key %s!\n\n\n", key);
-					//while(true) {}
+				if (_acpi_aml_parse_defname((start + i), key, output)) {
+					_acpi_dbg("Successfully found value of '%s'!", key);
 					return true;
 				}
 				break;
-			/*case ACPI_AML_OP_EXT:
-				i++;
-				 TODO: Extended operations
-				break;*/
-			// TODO: unimplemented/unknown operator default case
 		}
 	}
 

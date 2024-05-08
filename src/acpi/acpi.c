@@ -131,7 +131,14 @@ static bool_t _acpi_parse_dsdt(struct acpi_dsdt *dsdt) {
 
 	uint8_t *aml = _acpi_data.dsdt->definition_block;
 	uint32_t aml_len = _acpi_data.dsdt->header.length - sizeof(_acpi_data.dsdt->header);
-	_acpi_aml_find_value(aml, aml_len, "_S5_");
+
+	uint8_t buffer[32]; // not expecting more than 4 bytes
+	if (!_acpi_aml_find_value(aml, aml_len, "_S5_", buffer)) {
+		_acpi_warn("Unable to find or parse _S5_ from DSDT");
+		return false;
+	}
+	_acpi_data._S5 = buffer[0] & 7; // Only first byte matters and only first 3 bits
+	_acpi_info("Parsed _S5 value %u from DSDT", _acpi_data._S5);
 
 	return true;
 }
@@ -179,13 +186,13 @@ void _acpi_command(enum _acpi_commands cmd) {
 			// If not entering an S4BIOS state, and not a HW-reduced ACPI platform, then OSPM writes SLP_TYPa (from the associated sleeping object) with the SLP_ENa bit set to the PM1a_CNT register.
 			_acpi_dbg("Writing SLP_TYPx and SLP_ENx to PM1a control register");
 			int pm1a_cnt_blk = __inw(_acpi_data.fadt->pm1a_cnt_blk);
-			pm1a_cnt_blk = pm1a_cnt_blk | (1 << 13) | 0x1C00; // TODO: Use _S5_ value instead of hardcoding
+			pm1a_cnt_blk = pm1a_cnt_blk | (1 << 13) | (_acpi_data._S5 << 10);
 			__outw(_acpi_data.fadt->pm1a_cnt_blk, pm1a_cnt_blk);
 
 			// OSPM writes SLP_TYPb with the SLP_EN bit set to the PM1b_CNT register, or writes the HW-reduced ACPI Sleep Type value and the SLP_EN bit to the Sleep Control Register.
 			_acpi_dbg("Writing SLP_TYPx and SLP_ENx to PM1b control register");
 			int pm1b_cnt_blk = __inw(_acpi_data.fadt->pm1b_cnt_blk);
-			pm1b_cnt_blk = pm1b_cnt_blk | (1 << 13) | 0x1C00; // TODO: Use _S5_ value instead of hardcoding
+			pm1b_cnt_blk = pm1b_cnt_blk | (1 << 13) | (_acpi_data._S5 << 10);
 			__outw(_acpi_data.fadt->pm1b_cnt_blk, pm1b_cnt_blk);
 
 			// Wait until shutdown happens
