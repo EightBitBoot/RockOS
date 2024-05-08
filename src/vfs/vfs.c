@@ -157,6 +157,10 @@ void _vfs_dirent_to_pathname(dirent_t *dirent, char *buffer)
         _vfs_dirent_to_pathname(dirent->parent, buffer);
     }
 
+    if(dirent->parent != g_root_dirent) {
+        __strcat(buffer, "/");
+    }
+
     // Yes I know this would fail if the filename == VFS_NAME_MAX
     __strcat(buffer, dirent->d_name_backing);
 }

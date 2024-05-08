@@ -24,6 +24,8 @@ INTERNAL_COMMAND(int_cmd_ls);
 INTERNAL_COMMAND(int_cmd_vgademo);
 INTERNAL_COMMAND(int_cmd_getcwd);
 INTERNAL_COMMAND(int_cmd_cd);
+INTERNAL_COMMAND(int_cmd_cat);
+INTERNAL_COMMAND(int_cmd_write);
 
 #define COMMAND_STR_SIZE (128)
 typedef struct command_entry
@@ -46,6 +48,8 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("vgademo", "demonstrate vga", int_cmd_vgademo, 0),
     COMMAND_ENTRY("pwd", "print the current working directory of the shell", int_cmd_getcwd, 0),
     COMMAND_ENTRY("cd", "change the current working directory of the shell", int_cmd_cd, 0),
+    COMMAND_ENTRY("cat", "read the contents of a file", int_cmd_cat, 0),
+    COMMAND_ENTRY("write", "write data to a file", int_cmd_write, 0),
 
     COMMAND_ENTRY("test_vfs", "run various userspace vfs tests", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
@@ -190,7 +194,7 @@ USERMAIN(wtsh_main)
                     cwrites(out);
                 }
 
-                
+
 
                 in_buf[0] = 0;
                 cursor_pos = 0;
@@ -288,9 +292,27 @@ INTERNAL_COMMAND(int_cmd_reboot)
     return 0;
 }
 
+#define DENT_BUFFER_COUNT 20
+adinfs_dent_t dent_buffer[DENT_BUFFER_COUNT];
+
 INTERNAL_COMMAND(int_cmd_ls)
 {
+    fd_t curr_fd = fopen(".", O_READ, 0);
+    int32_t status = 0;
+    uint32_t num_read = flistdir(curr_fd, dent_buffer, DENT_BUFFER_COUNT, &status, 0);
+    fclose(curr_fd);
+
+    if(status) {
+        sh_printf("Failed to list the current directory: %d\n", status);
+        return -1;
+    }
+
+    for(int i = 0; i < num_read; i++) {
+        sh_printf("%s:    %s\n", dent_buffer[i].name, (dent_buffer[i].type == S_TYPE_FILE ? "file" : "dir"));
+    }
+
     return 0;
+
 }
 
 void draw_square(unsigned x, unsigned y, unsigned side, unsigned color) {
@@ -408,3 +430,64 @@ INTERNAL_COMMAND(int_cmd_cd)
     return 0;
 }
 
+INTERNAL_COMMAND(int_cmd_write)
+{
+    if(argc < 3) {
+        cwrites("Path and data are required!\n");
+        return -1;
+    }
+
+    fd_t fd = fopen(argv[1], O_WRITE, 0);
+
+    if(fd < 0) {
+        sh_printf("Failed to open file: %d\n", fd);
+        return -1;
+    }
+
+    for(int i = 2; i < argc; i++) {
+        fwrite(fd, argv[i], __strlen(argv[i]), 0, NULL);
+        if(i < argc - 1) {
+            fwrite(fd, " ", 1, 0, NULL);
+        }
+    }
+
+    fclose(fd);
+}
+
+#define READ_BUFFER_LEN 256
+char read_buffer[READ_BUFFER_LEN];
+
+INTERNAL_COMMAND(int_cmd_cat)
+{
+    if(argc < 2) {
+        cwrites("Path is required!\n");
+    }
+
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    fd_t fd = fopen(argv[1], O_READ, 0);
+    if(fd < 0) {
+        sh_printf("Failed to open file: %d\n", fd);
+        return -1;
+    }
+
+    uint32_t file_len = fseek(fd, 0, SEEK_END, NULL);
+    fseek(fd, 0, SEEK_SET, NULL);
+
+    int32_t read_status = 0;
+    uint32_t num_read = fread(fd, read_buffer, file_len, 0, &read_status);
+
+    if(read_status < 0 && read_status != E_EOF) {
+        sh_printf("Failed to read: %d\n", read_status);
+        if(num_read == 0) {
+            return -1;
+        }
+    }
+
+    cwrites(read_buffer);
+    cwrites("\n");
+
+    fclose(fd);
+
+    return 0;
+}
