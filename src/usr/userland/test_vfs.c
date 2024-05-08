@@ -27,6 +27,7 @@ char print_buffer[PRINT_BUFFER_LEN] = {};
 
 void test_fd_assignment(void)
 {
+    // For best results, enable debug print in namey.c:resolve_path(...)
     fd_t fd0 = fopen("/", O_READ, 0);
     printf("fd0: %d\n", fd0);
 
@@ -49,6 +50,18 @@ void test_fd_assignment(void)
     printf("fd4: %d\n", fd4);
 
     fclose(fd4);
+
+    fd_t fd5 = fopen("/foo/bar", O_READ, 0);
+    printf("fd5: %d\n", fd5);
+
+    fd_t fd6 = fopen("/foo", O_READ, 0);
+    printf("fd6: %d\n", fd6);
+
+    fd_t fd7 = fopen("/etc/bar", O_READ, 0);
+    printf("fd7: %d\n", fd7);
+
+    fd_t fd8 = fopen("/etc/bar", O_READ, 0);
+    printf("fd8: %d\n", fd8);
 }
 
 void test_rw_locks(void)
@@ -373,13 +386,13 @@ USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
 
-    // test_fd_assignment();
+    test_fd_assignment();
     // test_rw_locks();
     // test_fioctl();
     // test_read();
     // test_fseek();
     // test_write();
-    test_listdir();
+    // test_listdir();
 
     return 0;
 }

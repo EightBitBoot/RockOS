@@ -21,14 +21,14 @@ typedef struct kfile        kfile_t;
 
 // ----------------------------------------------------------------------------
 
-// TODO(Adin): Move the dirent cache system to its own file (if needed)
 struct dirent
 {
     kstr_t d_name;
     char d_name_backing[VFS_NAME_MAX];
     inode_t *d_inode;
 
-    // TODO(Adin): Parent and children
+    dirent_t *parent;
+    queue_t children;
 };
 
 // TODO(Adin): Make this dynamic (eg. accessed via a function call) when the
@@ -160,7 +160,9 @@ dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num);
 
 kfile_t *_vfs_allocate_file(void);
 super_block_t *_vfs_allocate_superblock(void);
-dirent_t *_vfs_allocate_dirent(void);
+dirent_t *_vfs_allocate_dirent(kstr_t *name);
+
+dirent_t *_vfs_dirent_lookup_child(dirent_t *parent, kstr_t *name);
 
 void _vfs_free_file(kfile_t *file);
 

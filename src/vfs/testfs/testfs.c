@@ -95,11 +95,11 @@ status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
 {
     bogus_node_t *bogus_node = inode->i_priv;
     if(!bogus_node) {
-        return E_NO_DATA;
+        return S_NO_DATA;
     }
 
     if(bogus_node->num_children == 0) {
-        return E_NO_CHILDREN;
+        return S_NO_CHILDREN;
     }
 
     for(int i = 0; i < bogus_node->num_children; i++) {
@@ -108,11 +108,11 @@ status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
 
         if(KSTR_IS_EQUAL(&child_name, &dirent->d_name)) {
             dirent->d_inode = &child->inode;
-            return E_SUCCESS;
+            break;
         }
     }
 
-    return E_NOT_FOUND;
+    return S_OK;
 }
 
 status_t testfs_close_file(kfile_t *file)
@@ -260,7 +260,8 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
         _que_insert(&testfs_super_block->sb_inodes, curr_inode);
     }
 
-    dirent_t *testfs_root_dirent = _vfs_allocate_dirent();
+    kstr_t root_name = KSTR_LIT_CREATE(bogus_root_node.name);
+    dirent_t *testfs_root_dirent = _vfs_allocate_dirent(&root_name);
 
     // Init the root dirent
     testfs_root_dirent->d_inode = &bogus_root_node.inode;

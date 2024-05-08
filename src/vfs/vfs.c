@@ -53,6 +53,7 @@ void _vfs_init(void)
     testfs_init();
     _vfs_mount_fs("/", 0);
     g_root_dirent = __mounts[0]->mnt_root;
+    g_root_dirent->parent = g_root_dirent;
 
     // TODO(Adin): Panics for initialization failures
 }
@@ -115,15 +116,39 @@ super_block_t *_vfs_allocate_superblock(void)
     return slab_alloc(&__superblock_cache, SC_ALLOC_ZERO_MEM);
 }
 
-dirent_t *_vfs_allocate_dirent(void)
+dirent_t *_vfs_allocate_dirent(kstr_t *name)
 {
-    // TODO(Adin): Reference counting
-    return slab_alloc(&__dirent_cache, SC_ALLOC_ZERO_MEM);
+    if(name->len > VFS_NAME_MAX) {
+        return NULL;
+    }
+
+    dirent_t *dirent = slab_alloc(&__dirent_cache, SC_ALLOC_ZERO_MEM);
+    _que_create(&dirent->children, NULL);
+    __memcpy(dirent->d_name_backing, name->str, name->len);
+    dirent->d_name.str = dirent->d_name_backing;
+    dirent->d_name.len = name->len;
+
+    return dirent;
 }
 
 void _vfs_free_file(kfile_t *file)
 {
     slab_free(&__kfile_cache, file);
+}
+
+dirent_t *_vfs_dirent_lookup_child(dirent_t *parent, kstr_t *name)
+{
+    qnode_t *curr_node = parent->children.head;
+    while(curr_node) {
+        dirent_t *curr_child = curr_node->data;
+        if(kstr_strcmp(&curr_child->d_name, name) == 0) {
+            return curr_child;
+        }
+
+        curr_node = curr_node->next;
+    }
+
+    return NULL;
 }
 
 // --------------------------------- File Private ---------------------------------

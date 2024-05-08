@@ -402,6 +402,7 @@ void _kinit( void ) {
     pcb->pid = pcb->ppid = PID_INIT;
     pcb->state = New;
     pcb->priority = SysPrio;
+	pcb->cwd = g_root_dirent;
 
     // process context area and initial stack contents
 	char *args[] = { "init", "+", NULL };

@@ -37,17 +37,20 @@ typedef int32_t status_t;
 #define S_OK		0
 
 // generic failure
-#define S_ERR		 (-1)
+#define S_ERR		  (-1)
 
 // other failures
-#define S_NOMEM		 (-2)
-#define S_EMPTY		 (-3)
-#define S_NOTFOUND	 (-4)
-#define S_NOT_SUPP   (-5)
-#define S_BAD_PARAM  (-6)
-#define S_BAD_ACTION (-7)
-#define S_EOF        (-8)
-#define S_TOO_SMALL  (-9)
+#define S_NOMEM		  (-2)
+#define S_EMPTY		  (-3)
+#define S_NOTFOUND	  (-4)
+#define S_NOT_SUPP    (-5)
+#define S_BAD_PARAM   (-6)
+#define S_BAD_ACTION  (-7)
+#define S_EOF         (-8)
+#define S_TOO_SMALL   (-9)
+#define S_NOT_A_DIR   (-10)
+#define S_NO_DATA     (-11)
+#define S_NO_CHILDREN (-12)
 
 /*
 ** Macros and pseudo-functions

@@ -33,6 +33,7 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("shutdown", int_cmd_shutdown, 0),
     COMMAND_ENTRY("reboot", int_cmd_reboot, 0),
     COMMAND_ENTRY("ls", int_cmd_ls, 0),
+    COMMAND_ENTRY("test_vfs", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
 
@@ -125,5 +126,10 @@ INTERNAL_COMMAND(int_cmd_shutdown)
 INTERNAL_COMMAND(int_cmd_reboot)
 {
     cwrites("help");
+    return 0;
+}
+
+INTERNAL_COMMAND(int_cmd_ls)
+{
     return 0;
 }
