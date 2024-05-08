@@ -12,27 +12,31 @@
 #define INTERNAL_COMMAND USERMAIN
 
 // Forward declarations of internal commands
+INTERNAL_COMMAND(int_cmd_help);
 INTERNAL_COMMAND(int_cmd_echo);
 INTERNAL_COMMAND(int_cmd_exit);
 INTERNAL_COMMAND(int_cmd_shutdown);
 INTERNAL_COMMAND(int_cmd_reboot);
 INTERNAL_COMMAND(int_cmd_ls);
 
+#define COMMAND_STR_SIZE (128)
 typedef struct command_entry
 {
-    char name[128]; // Arbitrary size but makes the memory usage consistent
+    char name[COMMAND_STR_SIZE]; // Arbitrary size but makes the memory usage consistent
+    char description[COMMAND_STR_SIZE]; // Used by help command to show description
     userfcn_t entrypoint;
     uint8_t is_subprocess; // Does the command require a fork or is it internal?
 } command_entry_t;
 
-#define COMMAND_ENTRY(name, entry, is_subprocess) { (name), (entry), (is_subprocess) }
+#define COMMAND_ENTRY(name, description, entry, is_subprocess) { (name), (description), (entry), (is_subprocess) }
 
 command_entry_t g_commands[] = {
-    COMMAND_ENTRY("echo", int_cmd_echo, 0),
-    COMMAND_ENTRY("exit", int_cmd_exit, 0),
-    COMMAND_ENTRY("shutdown", int_cmd_shutdown, 0),
-    COMMAND_ENTRY("reboot", int_cmd_reboot, 0),
-    COMMAND_ENTRY("ls", int_cmd_ls, 0),
+    COMMAND_ENTRY("help", "display this help text", int_cmd_help, 0),
+    COMMAND_ENTRY("echo", "output a line of text", int_cmd_echo, 0),
+    COMMAND_ENTRY("exit", "exit the shell", int_cmd_exit, 0),
+    COMMAND_ENTRY("shutdown", "shutdown the system", int_cmd_shutdown, 0),
+    COMMAND_ENTRY("reboot", "reboot the system", int_cmd_reboot, 0),
+    COMMAND_ENTRY("ls", "list directory contents", int_cmd_ls, 0),
     // COMMAND_ENTRY("test_vfs", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
@@ -147,6 +151,26 @@ USERMAIN(wtsh_main)
 }
 
 // -- Internal Command Entrypoints --
+
+INTERNAL_COMMAND(int_cmd_help)
+{
+    char buffer[(COMMAND_STR_SIZE * 2) + 9]; // calculated based on command entry size
+    sprint(buffer, "wtsh v1.0 (%s %s)\n\n", __DATE__, __TIME__);
+    cwrites(buffer);
+
+    for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
+        command_entry_t cmd = g_commands[i];
+
+        if (IS_PRINTABLE(cmd.name[0])) {
+            sprint(buffer, "    %-12s - %s\n", cmd.name, cmd.description);
+            cwrites(buffer);
+        }
+    }
+
+    cwrites("\n");
+
+    return 0;
+}
 
 INTERNAL_COMMAND(int_cmd_echo)
 {
