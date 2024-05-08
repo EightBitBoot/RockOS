@@ -11,7 +11,7 @@
 
 #include "usr/testfs_usr.h"
 
-status_t testfs_open(inode_t *inode, kfile_t *file);
+status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags);
 status_t testfs_close_file(kfile_t *file);
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
@@ -51,11 +51,13 @@ static fs_type_t testfs_fs_type = {
     .mount = testfs_mount
 };
 
-status_t testfs_open(inode_t *inode, kfile_t *file)
+status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags)
 {
+    (void) flags;
+
     file->kf_priv = inode->i_priv;
 
-    return E_SUCCESS;
+    return S_OK;
 }
 
 int testfs_iterate_shared(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count)

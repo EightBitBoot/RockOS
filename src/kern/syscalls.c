@@ -938,7 +938,7 @@ SYSIMPL(fopen)
 	file->kf_ops = target->i_file_ops;
 	file->kf_mode = mode;
 
-	status_t open_status = file->kf_ops->open(target, file);
+	status_t open_status = file->kf_ops->open(target, file, flags);
 	if(open_status) {
 		_vfs_free_file(file);
 		RET(_current) = __status_to_sys_ret(open_status);

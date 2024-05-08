@@ -118,7 +118,7 @@ struct kfile
 struct kfile_ops
 {
     // Fill out a file structure from the inode
-    status_t (*open)(inode_t *inode, kfile_t *file); // Here because linux defines it here
+    status_t (*open)(inode_t *inode, kfile_t *file, uint32_t flags); // Here because linux defines it here
 
     // Optional hook for drivers to perform cleanup code when a file is closed
     // If this isn't present, the file will close normally and be freed
