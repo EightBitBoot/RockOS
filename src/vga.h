@@ -107,6 +107,8 @@ extern uint8_t g_rick[57600];
 
 extern uint8_t g_adin[28260];
 
+extern uint8_t g_obiwan[43200];
+
 extern uint8_t g_16_color_palette[256];
 
 extern uint8_t g_256_color_palette[768];

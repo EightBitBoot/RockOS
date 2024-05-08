@@ -441,6 +441,10 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             break;
         case 0x5b: // [: Draw Baby Adin
             draw_image(157, 180, g_adin);
+            break;
+        case 0x5d: // ]: Draw Obi-Wan
+            draw_image(320, 135, g_obiwan);
+            break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
 }
