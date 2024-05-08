@@ -195,6 +195,62 @@ unsigned int vgatextgetactivecolor( void );
 */
 void vgatextsetactivecolor( unsigned int color );
 
+/**
+** vgagetmode - get the current active VGA Mode
+**
+** usage:   vgagetmode()
+** 
+** @returns the active VGA Mode, as defined in vga.h
+*/
+unsigned int vgagetmode( void );
+
+/**
+** vgasetmode - set the current active VGA Mode
+**
+** usage:   vgasetmode( mode )
+**
+** @param mode   the mode to set as active
+** 
+** @returns void
+*/
+void vgasetmode( unsigned int mode );
+
+/**
+** vgaclearscreen - clear the VGA Graphics Screen
+**
+** usage:   vgaclearscreen()
+** 
+** @returns void
+*/
+void vgaclearscreen( void );
+
+/**
+** vgatest - draw a VGA Graphics Test Pattern
+**
+** usage:   vgatest()
+** 
+** @returns void
+*/
+void vgatest( void );
+
+/**
+** vgadrawimage - draw an Image in VGA Graphics Modes
+**
+** usage:   vgadrawimage( width, height, x_offset, y_offset, image )
+** 
+** @returns void
+*/
+void vgadrawimage( uint16_t width, uint8_t height, uint16_t x_offset, uint8_t y_offset, uint8_t* image );
+
+/**
+** vgawritepixel - write an individual Pixel in VGA Graphics Modes
+**
+** usage:   vgawritepixel( x, y, color )
+** 
+** @returns void
+*/
+void vgawritepixel( uint16_t x, uint16_t y, uint8_t color );
+
 
 /**
 ** bogus - a nonexistent system call, to test our syscall ISR

@@ -124,27 +124,27 @@
 #endif
 
 // uncomment these to spawn the various user processes directly
-#define SPAWN_A
-#define SPAWN_B
-#define SPAWN_C
-#define SPAWN_D
-#define SPAWN_E
-#define SPAWN_F
-#define SPAWN_G
-#define SPAWN_H
-#define SPAWN_I
-#define SPAWN_J
-#define SPAWN_K
-#define SPAWN_L
-#define SPAWN_M
-#define SPAWN_N
-#define SPAWN_P
-#define SPAWN_Q
-#define SPAWN_R
-#define SPAWN_S
-#define SPAWN_T
-#define SPAWN_U
-#define SPAWN_V
+// #define SPAWN_A
+// #define SPAWN_B
+// #define SPAWN_C
+// #define SPAWN_D
+// #define SPAWN_E
+// #define SPAWN_F
+// #define SPAWN_G
+// #define SPAWN_H
+// #define SPAWN_I
+// #define SPAWN_J
+// #define SPAWN_K
+// #define SPAWN_L
+// #define SPAWN_M
+// #define SPAWN_N
+// #define SPAWN_P
+// #define SPAWN_Q
+// #define SPAWN_R
+// #define SPAWN_S
+// #define SPAWN_T
+// #define SPAWN_U
+// #define SPAWN_V
 
 //
 // There is no userO.  Users W-Z are spawned from other
