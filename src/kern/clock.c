@@ -66,13 +66,12 @@ static void _clk_isr( int vector, int code ) {
 
     // spin the pinwheel
 
-	//SMT: Commenting for Debugging Graphics
-    // ++_pinwheel;
-    // if( _pinwheel == (CLOCK_FREQUENCY / 10) ) {
-    //     _pinwheel = 0;
-    //     ++_pindex;
-    //     __cio_putchar_at( 0, 0, "|/-\\"[ _pindex & 3 ] );
-    // }
+    ++_pinwheel;
+    if( _pinwheel == (CLOCK_FREQUENCY / 10) ) {
+        _pinwheel = 0;
+        ++_pindex;
+        __cio_putchar_at( 0, 0, "|/-\\"[ _pindex & 3 ] );
+    }
 
 #if defined(SYSTEM_STATUS)
     // Periodically, dump the queue lengths and the SIO status (along
