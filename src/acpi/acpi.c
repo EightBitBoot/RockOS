@@ -23,6 +23,13 @@ struct acpi_data {
 };
 static struct acpi_data _acpi_data = {0};
 
+static void* _acpi_ptr(uint64_t ptr) {
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+	return (void *) ptr;
+	#pragma GCC diagnostic pop
+}
+
 static bool_t _acpi_locate_rsdp(void) {
 	// Find and ensure RSDP table is valid
 	_acpi_data.rsdp = _acpi_get_rsdp_ptr();
@@ -37,7 +44,7 @@ static bool_t _acpi_locate_rsdp(void) {
 static bool_t _acpi_locate_root_sdts(void) {
 	// Find and validate XSDT (if present)
 	if (_acpi_data.rsdp->revision >= 2) {
-		struct acpi_sdt_root64* xsdt = (struct acpi_sdt_root64 *) _acpi_data.rsdp->xsdt_address;
+		struct acpi_sdt_root64* xsdt = (struct acpi_sdt_root64 *) _acpi_ptr(_acpi_data.rsdp->xsdt_address);
 		if (_acpi_validate_sdt(&xsdt->header)) {
 			// Warn on XSDT on 32-bit systems
 			if (sizeof(void *) < 8) {
@@ -54,7 +61,7 @@ static bool_t _acpi_locate_root_sdts(void) {
 	}
 
 	// Find and validate RSDT
-	struct acpi_sdt_root32* rsdt = (struct acpi_sdt_root32 *) _acpi_data.rsdp->rsdt_address;
+	struct acpi_sdt_root32* rsdt = (struct acpi_sdt_root32 *) _acpi_ptr(_acpi_data.rsdp->rsdt_address);
 	if (_acpi_validate_sdt(&rsdt->header)) {
 		_acpi_data.rsdt = rsdt;
 		_acpi_dbg("RSDT @0x%x", _acpi_data.rsdt);
@@ -77,10 +84,7 @@ static bool_t _acpi_locate_sdts(void) {
 	if (_acpi_data.xsdt != NULL) {
 		_acpi_info("Searching XSDT for SDTs");
 		num_entries = (_acpi_data.xsdt->header.length - sizeof(_acpi_data.xsdt->header)) / sizeof(uint64_t);
-		#pragma GCC diagnostic push
-		#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 		entries = (struct acpi_sdt_header **) _acpi_data.xsdt->entry_addresses;
-		#pragma GCC diagnostic pop
 	} else if (_acpi_data.rsdt != NULL) {
 		_acpi_info("Searching RSDT for SDTs");
 		num_entries = (_acpi_data.rsdt->header.length - sizeof(_acpi_data.rsdt->header)) / sizeof(uint32_t);
@@ -210,7 +214,7 @@ void _acpi_command(enum _acpi_commands cmd) {
 			switch (_acpi_data.fadt->reset_reg.addr_space_id) {
 				case ACPI_ADDR_SPACE_SYSTEM_MEM:
 					_acpi_dbg("Issuing reset via system memory");
-					*((uint8_t *) _acpi_data.fadt->reset_reg.addr) = _acpi_data.fadt->reset_value;
+					*((uint8_t *) _acpi_ptr(_acpi_data.fadt->reset_reg.addr)) = _acpi_data.fadt->reset_value;
 					break;
 				case ACPI_ADDR_SPACE_SYSTEM_IO:
 					_acpi_dbg("Issuing reset via system IO");
@@ -257,7 +261,7 @@ void _acpi_init(void) {
 
 	// Parse DSDT
 	_acpi_dbg("Trying extended DSDT address");
-	if (!_acpi_parse_dsdt((struct acpi_dsdt *) _acpi_data.fadt->x_dsdt)) {
+	if (!_acpi_parse_dsdt((struct acpi_dsdt *) _acpi_ptr(_acpi_data.fadt->x_dsdt))) {
 		// TODO: This fails. Is the DSDT definition wrong?
 		_acpi_info("Failed to parse extended DSDT.");
 	}
