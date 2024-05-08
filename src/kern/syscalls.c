@@ -827,7 +827,7 @@ SYSIMPL(vgatest)
 */
 SYSIMPL(vgadrawimage)
 {
-	__vga_draw_image(ARG(_current,1), ARG(_current,2), ARG(_current,3), ARG(_current,4), ARG(_current,5));
+	__vga_draw_image(ARG(_current,1), ARG(_current,2), ARG(_current,3), ARG(_current,4), (uint8_t *) ARG(_current,5));
 }
 
 /**

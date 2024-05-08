@@ -37,20 +37,13 @@
 
 static unsigned int _vga_mode = 0;
 
-static void _reset_flipflop() {
+static void _reset_flipflop(void) {
     // Read Input Status #1 to set FlipFlop to Index
     __inb(INPUT_STATUS_1_PORT); // Read port 3DA
 }
 
-static int _vga_attr_get_index() {
-    _reset_flipflop();
-    return __inb(VGA_ATTR_ADDR_REG_RW);
-    _reset_flipflop();
-}
-
 uint8_t _vga_attr_read(unsigned int index) {
     _reset_flipflop();
-    char buf[256];
     int orig_index = __inb(VGA_ATTR_ADDR_REG_RW);
     int mod_index = (orig_index & 0b11100000) | (index & 0b00011111);
     __outb(VGA_ATTR_ADDR_REG_RW, mod_index);
@@ -215,12 +208,12 @@ static void _write_pixel8(unsigned x, unsigned y, unsigned c)
 }
 
 void __vga_clear_screen(void) {
-    unsigned x, y;
+    unsigned p;
 	unsigned mode = _vga_mode;
 
 	// Clear Screen
-	for (y = 0; y < 4; y++) {
-		_set_plane(y);
+	for (p = 0; p < 4; p++) {
+		_set_plane(p);
 		__memclr((unsigned *) 0xA0000, 64000);
 	}
 
@@ -228,7 +221,7 @@ void __vga_clear_screen(void) {
 }
 
 void _draw_x(void) {
-	unsigned x, y;
+	unsigned y;
 
 	for(y = 0; y < _current_height; y++) {
 		__vga_write_pixel((_current_width - _current_height) / 2 + y, y, 1);
@@ -294,7 +287,7 @@ static void _write_font(unsigned char *buf, unsigned font_height)
 	_set_plane(2);
 	// Write Font 0
 	for(i = 0; i < 256; i++) {
-		__memcpy(0xA0000+(16384u * 0 + i * 32), buf, font_height);
+		__memcpy((void *)0xA0000+(16384u * 0 + i * 32), buf, font_height);
 		buf += font_height;
 	}
 	// Restore Registers
@@ -311,8 +304,7 @@ static void _write_font(unsigned char *buf, unsigned font_height)
 }
 
 static void _write_color_palette(uint8_t *palette, unsigned num_colors) {
-	unsigned i,r,g,b;
-	char buf[32];
+	unsigned i;
 
 	__outb(VGA_DAC_WRITE_INDEX, 0);
 	for (i = 0; i < num_colors*3; i++) {
