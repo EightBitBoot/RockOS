@@ -47,6 +47,7 @@ typedef int32_t status_t;
 #define S_BAD_PARAM  (-6)
 #define S_BAD_ACTION (-7)
 #define S_EOF        (-8)
+#define S_TOO_SMALL  (-9)
 
 /*
 ** Macros and pseudo-functions

@@ -125,7 +125,7 @@ void test_fioctl(void)
 #define TEST_READ_PRINT(fd_name)                                         \
     printf(                                                              \
         #fd_name ": %d, num_read: %d, status %d, read_buffer: \"%s\"\n", \
-        fd_name, num_read, status, read_buffer                         \
+        fd_name, num_read, status, read_buffer                           \
     )
 
 #define READ_BUFFER_LEN 256
@@ -323,6 +323,52 @@ void test_write(void)
     printf("Goodbye world!\n");
 }
 
+#define DENT_BUFFER_LEN 10
+
+void __dump_children(fd_t fd)
+{
+    adinfs_dent_t dent_buffer[DENT_BUFFER_LEN];
+    __memclr(dent_buffer, DENT_BUFFER_LEN * sizeof(adinfs_dent_t));
+
+    int32_t status = 0;
+    uint32_t num_children = flistdir(fd, NULL, 0, &status);
+    uint32_t num_read = flistdir(fd, dent_buffer, 256, &status);
+    printf(
+        "fd: %d, num_children: %d, num_read: %d, status: %d\n",
+        fd, num_children, num_read, status
+    );
+
+    for(uint32_t i = 0; i < num_read; i++) {
+        printf(
+            "child name: \"%s\", child_type: %s\n",
+            dent_buffer[i].name, (dent_buffer[i].type == S_TYPE_FILE ? "file" : "dir")
+        );
+    }
+}
+
+void test_listdir(void)
+{
+    fd_t root_fd = fopen("/", O_READ, 0);
+    fd_t etc_fd  = fopen("/etc", O_READ, 0);
+    fd_t usr_fd  = fopen("/usr", O_READ, 0);
+    fd_t lib_fd  = fopen("/usr/lib", O_READ, 0);
+    fd_t bin_fd  = fopen("/usr/bin", O_READ, 0);
+
+    __dump_children(root_fd);
+    cwrites("\n");
+
+    __dump_children(etc_fd);
+    cwrites("\n");
+
+    __dump_children(usr_fd);
+    cwrites("\n");
+
+    __dump_children(lib_fd);
+    cwrites("\n");
+
+    __dump_children(bin_fd);
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
@@ -332,7 +378,8 @@ USERMAIN(test_vfs)
     // test_fioctl();
     // test_read();
     // test_fseek();
-    test_write();
+    // test_write();
+    test_listdir();
 
     return 0;
 }

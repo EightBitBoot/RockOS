@@ -878,6 +878,9 @@ static int32_t __status_to_sys_ret(status_t status)
 		case S_NOMEM:
 			return E_NO_MEM;
 
+		case S_TOO_SMALL:
+			return E_TOO_SMALL;
+
 		case S_OK:
 			return E_SUCCESS;
 
@@ -1098,10 +1101,48 @@ SYSIMPL(fwrite)
 	}
 }
 
-// // TODO(Adin): flistdir (what should the params be)
+// uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status);
 SYSIMPL(flistdir)
 {
+	fd_t fd               = ARG(_current, 1);
+	adinfs_dent_t *buffer = (adinfs_dent_t *) ARG(_current, 2);
+	uint32_t count 		  = ARG(_current, 3);
+	int32_t *status  	  = (int32_t *) ARG(_current, 4);
 
+	if(IS_BAD_FD(fd)) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_PARAM;
+		}
+		return;
+	}
+
+	kfile_t *target = _current->open_files[fd];
+
+	if(!target->kf_ops || !target->kf_ops->iterate_shared || target->kf_inode->i_type != S_TYPE_DIR) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_NOT_SUPPORTED;
+		}
+		return;
+	}
+
+	if(!(target->kf_mode & O_READ)) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_ACTION;
+		}
+	}
+
+	uint32_t num_written = 0;
+	// This is called every time because there is no guarantee the dentry cache will
+	// have every child of the current inode
+	status_t iterate_result = target->kf_ops->iterate_shared(target, buffer, count, &num_written);
+
+	RET(_current) = num_written;
+	if(status) {
+		*status = __status_to_sys_ret(iterate_result);
+	}
 }
 
 // int32_t fcreate(char *path, uint32_t flags);

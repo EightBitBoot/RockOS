@@ -260,7 +260,7 @@ uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *
 
 uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
 
-// TODO(Adin): flistdir (what should the params be)
+uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status);
 
 int32_t fcreate(char *path, uint32_t flags);
 

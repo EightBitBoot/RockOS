@@ -127,8 +127,7 @@ struct kfile_ops
 
     // Iterate over the contents of a directory: querying the fs driver instead of the dirent cache
     // Returns the number of buffer entries written
-    // TODO(Adin): Change this so it doesn't need the userspace buffer to be passed
-    int (*iterate_shared)(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count); // TODO(Adin): Add more params as needed
+    int (*iterate_shared)(kfile_t *file, adinfs_dent_t *buffer, uint32_t buffer_count, uint32_t *num_written);
 
     // Read data from a file into a userspace-supplied buffer. Because this isn't the fanciest vfs in the world, (and not intended
     // to support the fanciest fs drivers either) read / write heads are handled by the vfs instead of the fs driver itself. As a
@@ -143,7 +142,6 @@ struct kfile_ops
     // This is completely fs driver dependent and, unlike posix, there are no default actions; meaning if the
     // driver doesn't support it, the fioctl syscall will return E_NOT_SUPPORTED.
     status_t (*ioctl)(kfile_t *file, uint32_t action, void *data);
-
 
     // Get the length of a file. This isn't _strictly_ required, but without it, fseek will fail (which is
     // pretty unusual for a vfs) so you better implement it in your fs drivers. Yeah I'm looking at you. I

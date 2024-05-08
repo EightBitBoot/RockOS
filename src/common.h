@@ -132,6 +132,7 @@ enum datum_e {
 #define E_BAD_ACTION     (-12)
 #define E_EOF         	 (-13)
 #define E_NO_MEM		 (-14)
+#define E_TOO_SMALL		 (-15)
 
 // ----------------------------------------------------------
 // Predefined user process exit status values
@@ -169,6 +170,7 @@ typedef uint32_t inum_t;
 typedef struct adinfs_dent
 {
 	char name[VFS_NAME_MAX];
+	uint32_t type;
 } adinfs_dent_t;
 
 typedef int fd_t;
