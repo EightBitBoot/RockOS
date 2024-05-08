@@ -16,8 +16,10 @@ struct acpi_data {
 	struct acpi_sdt_root64 *xsdt;
 
 	struct acpi_fadt *fadt;
-	// TODO: how to parse AML coded tables dynamically?
 	struct acpi_dsdt *dsdt;
+
+	// AML-sourced data
+	uint8_t _S5;
 };
 static struct acpi_data _acpi_data = {0};
 
@@ -149,6 +151,7 @@ static bool_t _acpi_enable(void) {
 
 void _acpi_command(enum _acpi_commands cmd) {
 	// TODO: Validate assumptions (_acpi_data setup, etc)
+
 	switch (cmd) {
 		case ACPI_COMMAND_SHUTDOWN:
 			// See: ACPI Specification (v6.5) Section 16.1.6
@@ -158,28 +161,35 @@ void _acpi_command(enum _acpi_commands cmd) {
 			// Note: The motherboard in the lab does not provide _TTS, likely added in a more recent standard.
 
 			// TODO: _PTS
+			// Note: This requires advances AML parsing and interpreting and is not required by the lab's motherboard.
 
 			// TODO: Writes the waking vector into the FACS table in memory.
 			// Note: This operating system is not configured to wake, so we don't need to provide a vector.
 
 			// If not a HW-reduced ACPI platform, OSPM clears the WAK_STS in the PM1a_STS and PM1b_STS registers. On HW-reduced ACPI platforms, OSPM clears the WAK_STS bit in the Sleep Status Register.
-			struct acpi_pm1_sts_register* pm1a_evt_blk = (struct acpi_pm1_sts_register*) _acpi_data.fadt->pm1a_evt_blk;
-			struct acpi_pm1_sts_register* pm1b_evt_blk = (struct acpi_pm1_sts_register*) _acpi_data.fadt->pm1b_evt_blk;
+			_acpi_dbg("Clearing WAK_STS from PM1a and PM1b status registers");
+			int pm1a_evt_blk = __inw(_acpi_data.fadt->pm1a_evt_blk);
+			pm1a_evt_blk = pm1a_evt_blk | (1 << 15); // WAK_STS
+			__outw(_acpi_data.fadt->pm1a_evt_blk, pm1a_evt_blk);
 
-			pm1a_evt_blk->wak_sts = 1;
-			pm1b_evt_blk->wak_sts = 1;
+			int pm1b_evt_blk = __inw(_acpi_data.fadt->pm1b_evt_blk);
+			pm1b_evt_blk = pm1b_evt_blk | (1 << 15); // WAK_STS;
+			__outw(_acpi_data.fadt->pm1b_evt_blk, pm1b_evt_blk);
 
-			// TODO: If not entering an S4BIOS state, and not a HW-reduced ACPI platform, then OSPM writes SLP_TYPa (from the associated sleeping object) with the SLP_ENa bit set to the PM1a_CNT register.
-			struct acpi_pm1_cnt_register* pm1a_cnt_blk = (struct acpi_pm1_cnt_register*) _acpi_data.fadt->pm1a_cnt_blk;
+			// If not entering an S4BIOS state, and not a HW-reduced ACPI platform, then OSPM writes SLP_TYPa (from the associated sleeping object) with the SLP_ENa bit set to the PM1a_CNT register.
+			_acpi_dbg("Writing SLP_TYPx and SLP_ENx to PM1a control register");
+			int pm1a_cnt_blk = __inw(_acpi_data.fadt->pm1a_cnt_blk);
+			pm1a_cnt_blk = pm1a_cnt_blk | (1 << 13) | 0x1C00; // TODO: Use _S5_ value instead of hardcoding
+			__outw(_acpi_data.fadt->pm1a_cnt_blk, pm1a_cnt_blk);
 
-			pm1a_cnt_blk->slp_en = 1;
-
-			// TODO: OSPM writes SLP_TYPb with the SLP_EN bit set to the PM1b_CNT register, or writes the HW-reduced ACPI Sleep Type value and the SLP_EN bit to the Sleep Control Register.
-			struct acpi_pm1_cnt_register* pm1b_cnt_blk = (struct acpi_pm1_cnt_register*) _acpi_data.fadt->pm1b_cnt_blk;
-
-			pm1b_cnt_blk->slp_en = 1;
+			// OSPM writes SLP_TYPb with the SLP_EN bit set to the PM1b_CNT register, or writes the HW-reduced ACPI Sleep Type value and the SLP_EN bit to the Sleep Control Register.
+			_acpi_dbg("Writing SLP_TYPx and SLP_ENx to PM1b control register");
+			int pm1b_cnt_blk = __inw(_acpi_data.fadt->pm1b_cnt_blk);
+			pm1b_cnt_blk = pm1b_cnt_blk | (1 << 13) | 0x1C00; // TODO: Use _S5_ value instead of hardcoding
+			__outw(_acpi_data.fadt->pm1b_cnt_blk, pm1b_cnt_blk);
 
 			// Wait until shutdown happens
+			_acpi_dbg("Busy looping CPU until shutdown");
 			while (true);
 			break;
 		case ACPI_COMMAND_REBOOT:
@@ -202,13 +212,14 @@ void _acpi_command(enum _acpi_commands cmd) {
 					break;
 				case ACPI_ADDR_SPACE_PCI_CONFIG:
 					_acpi_dbg("Issuing reset via PCI configuration");
-					// TODO
+					// TODO: Implement and test. The lab computers use SYSTEM_MEM
 					break;
 				default:
 					_acpi_info("Invalid address space ID %u for FADT reset", _acpi_data.fadt->reset_reg.addr_space_id);
 			}
 
 			// OSPM should execute spin loops on all CPUs once writing reset register.
+			_acpi_dbg("Busy looping CPU until reboot");
 			while(true);
 
 			break;
