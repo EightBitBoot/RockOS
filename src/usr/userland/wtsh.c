@@ -21,6 +21,8 @@ INTERNAL_COMMAND(int_cmd_shutdown);
 INTERNAL_COMMAND(int_cmd_reboot);
 INTERNAL_COMMAND(int_cmd_ls);
 INTERNAL_COMMAND(int_cmd_vgademo);
+INTERNAL_COMMAND(int_cmd_getcwd);
+INTERNAL_COMMAND(int_cmd_cd);
 
 #define COMMAND_STR_SIZE (128)
 typedef struct command_entry
@@ -41,7 +43,10 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("reboot", "reboot the system", int_cmd_reboot, 0),
     COMMAND_ENTRY("ls", "list directory contents", int_cmd_ls, 0),
     COMMAND_ENTRY("vgademo", "demonstrate vga", int_cmd_vgademo, 0),
-    // COMMAND_ENTRY("test_vfs", test_vfs, 1),
+    COMMAND_ENTRY("pwd", "print the current working directory of the shell", int_cmd_getcwd, 0),
+    COMMAND_ENTRY("cd", "change the current working directory of the shell", int_cmd_cd, 0),
+
+    COMMAND_ENTRY("test_vfs", "run various userspace vfs tests", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
 
@@ -320,3 +325,21 @@ INTERNAL_COMMAND(int_cmd_vgademo)
 	// all done!
     return 0;
 }
+
+#define CWD_BUFFER_LEN 1024
+char cwd_buffer[CWD_BUFFER_LEN] = {0};
+
+INTERNAL_COMMAND(int_cmd_getcwd)
+{
+    fgetcwd(cwd_buffer, CWD_BUFFER_LEN);
+    cwrites(cwd_buffer);
+    cwrites("\n");
+
+    return 0;
+}
+
+INTERNAL_COMMAND(int_cmd_cd)
+{
+    return 0;
+}
+

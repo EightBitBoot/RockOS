@@ -8,6 +8,7 @@
 
 #define VFS_PATH_SEP '/'
 
+status_t resolve_path(char *path, dirent_t **result);
 status_t namey(char *path, inode_t **result);
 
 #endif // #ifndef __NAMEY_H__

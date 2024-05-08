@@ -70,6 +70,8 @@ SYSCALL(fcreate)
 SYSCALL(fdelete)
 SYSCALL(fioctl)
 SYSCALL(fseek)
+SYSCALL(fchdir)
+SYSCALL(fgetcwd)
 
 SYSCALL(ciogetcursorpos)
 SYSCALL(ciosetcursorpos)

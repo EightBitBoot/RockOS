@@ -127,7 +127,7 @@ struct kfile_ops
 
     // Iterate over the contents of a directory: querying the fs driver instead of the dirent cache
     // Returns the number of buffer entries written
-    int (*iterate_shared)(kfile_t *file, adinfs_dent_t *buffer, uint32_t buffer_count, uint32_t *num_written);
+    int (*iterate_shared)(kfile_t *file, adinfs_dent_t *buffer, uint32_t buffer_count, uint32_t *num_written, uint32_t flags);
 
     // Read data from a file into a userspace-supplied buffer. Because this isn't the fanciest vfs in the world, (and not intended
     // to support the fanciest fs drivers either) read / write heads are handled by the vfs instead of the fs driver itself. As a
@@ -163,6 +163,7 @@ super_block_t *_vfs_allocate_superblock(void);
 dirent_t *_vfs_allocate_dirent(kstr_t *name);
 
 dirent_t *_vfs_dirent_lookup_child(dirent_t *parent, kstr_t *name);
+void _vfs_dirent_to_pathname(dirent_t *dirent, char *buffer);
 
 void _vfs_free_file(kfile_t *file);
 

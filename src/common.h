@@ -187,6 +187,8 @@ typedef int fd_t;
 #define SEEK_SET  (1U)
 #define SEEK_END  (2U)
 
+#define LIST_DIR_SUPPRESS_DOTS (0x01U)
+
 /*
 ** Additional OS-only or user-only things
 */

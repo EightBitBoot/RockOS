@@ -4,6 +4,9 @@
 #include "kern/sched.h"
 #include "util/kstring.h"
 
+static kstr_t dot_str     = KSTR_CREATE(".", 1);
+static kstr_t dot_dot_str = KSTR_CREATE("..", 2);
+
 status_t resolve_path(char *path, dirent_t **result)
 {
     kstr_t kpath = KSTR_LIT_CREATE(path);
@@ -28,6 +31,15 @@ status_t resolve_path(char *path, dirent_t **result)
         }
 
         // TODO(Adin): Check for path component > VFS_NAME_MAX
+
+        if(KSTR_IS_EQUAL(&curr_component, &dot_str)) {
+            continue;
+        }
+
+        if(KSTR_IS_EQUAL(&curr_component, &dot_dot_str)) {
+            // Will always work becuase root's parent is itself
+            curr_dirent = curr_dirent->parent;
+        }
 
         dirent_t *cached_dirent = _vfs_dirent_lookup_child(curr_dirent, &curr_component);
 

@@ -151,6 +151,16 @@ dirent_t *_vfs_dirent_lookup_child(dirent_t *parent, kstr_t *name)
     return NULL;
 }
 
+void _vfs_dirent_to_pathname(dirent_t *dirent, char *buffer)
+{
+    if(dirent != g_root_dirent) {
+        _vfs_dirent_to_pathname(dirent->parent, buffer);
+    }
+
+    // Yes I know this would fail if the filename == VFS_NAME_MAX
+    __strcat(buffer, dirent->d_name_backing);
+}
+
 // --------------------------------- File Private ---------------------------------
 
 static mount_t *__vfs_allocate_mount(void)

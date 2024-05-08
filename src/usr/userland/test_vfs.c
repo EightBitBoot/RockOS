@@ -344,8 +344,8 @@ void __dump_children(fd_t fd)
     __memclr(dent_buffer, DENT_BUFFER_LEN * sizeof(adinfs_dent_t));
 
     int32_t status = 0;
-    uint32_t num_children = flistdir(fd, NULL, 0, &status);
-    uint32_t num_read = flistdir(fd, dent_buffer, 256, &status);
+    uint32_t num_children = flistdir(fd, NULL, 0, &status, 0);
+    uint32_t num_read = flistdir(fd, dent_buffer, 256, &status, 0);
     printf(
         "fd: %d, num_children: %d, num_read: %d, status: %d\n",
         fd, num_children, num_read, status
@@ -353,7 +353,7 @@ void __dump_children(fd_t fd)
 
     for(uint32_t i = 0; i < num_read; i++) {
         printf(
-            "child name: \"%s\", child_type: %s\n",
+            "child name: \"%s\", child_type: %d\n",
             dent_buffer[i].name, (dent_buffer[i].type == S_TYPE_FILE ? "file" : "dir")
         );
     }
@@ -382,17 +382,47 @@ void test_listdir(void)
     __dump_children(bin_fd);
 }
 
+void test_relative_paths(void)
+{
+    fd_t fd0 = fopen("..", O_READ, 0);
+    __dump_children(fd0);
+    cwrites("\n");
+
+    sleep(5000);
+
+    fd_t fd1 = fopen(".", O_READ, 0);
+    __dump_children(fd1);
+    cwrites("\n");
+
+    sleep(5000);
+
+    fd_t fd2 = fopen("etc/.", O_READ, 0);
+    __dump_children(fd2);
+    cwrites("\n");
+
+    sleep(5000);
+
+    fd_t fd3 = fopen("./etc/", O_READ, 0);
+    __dump_children(fd3);
+
+    fclose(fd0);
+    fclose(fd1);
+    fclose(fd2);
+    fclose(fd3);
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
 
-    test_fd_assignment();
+    // test_fd_assignment();
     // test_rw_locks();
     // test_fioctl();
     // test_read();
     // test_fseek();
     // test_write();
     // test_listdir();
+    test_relative_paths();
 
     return 0;
 }

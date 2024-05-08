@@ -873,6 +873,21 @@ SYSIMPL(vgawritepixel)
 	__vga_write_pixel(ARG(_current,1), ARG(_current,2), ARG(_current,3));
 }
 
+SYSIMPL(ciogetcursorpos)
+{
+	__cio_getpos((unsigned int *) ARG(_current, 1), (unsigned int *) ARG(_current, 2));
+}
+
+SYSIMPL(ciosetcursorpos)
+{
+	__cio_moveto((unsigned int) ARG(_current, 1), (unsigned int) ARG(_current, 2));
+}
+
+SYSIMPL(ciogetspecialdown)
+{
+	RET(_current) = __cio_getarrowdown();
+}
+
 // ----------------------------- VFS Calls -----------------------------
 
 #define IS_BAD_FD(fd) \
@@ -1126,6 +1141,7 @@ SYSIMPL(flistdir)
 	adinfs_dent_t *buffer = (adinfs_dent_t *) ARG(_current, 2);
 	uint32_t count 		  = ARG(_current, 3);
 	int32_t *status  	  = (int32_t *) ARG(_current, 4);
+	uint32_t flags        = ARG(_current, 5);
 
 	if(IS_BAD_FD(fd)) {
 		RET(_current) = 0;
@@ -1155,7 +1171,7 @@ SYSIMPL(flistdir)
 	uint32_t num_written = 0;
 	// This is called every time because there is no guarantee the dentry cache will
 	// have every child of the current inode
-	status_t iterate_result = target->kf_ops->iterate_shared(target, buffer, count, &num_written);
+	status_t iterate_result = target->kf_ops->iterate_shared(target, buffer, count, &num_written, flags);
 
 	RET(_current) = num_written;
 	if(status) {
@@ -1166,26 +1182,28 @@ SYSIMPL(flistdir)
 // int32_t fcreate(char *path, uint32_t type, uint32_t flags);
 SYSIMPL(fcreate)
 {
-	// char *path     = (char *) ARG(_current, 1);
-	// uint32_t type  = ARG(_current, 2);
-	// uint32_t flags = ARG(_current, 3);
+#if 0
+	char *path     = (char *) ARG(_current, 1);
+	uint32_t type  = ARG(_current, 2);
+	uint32_t flags = ARG(_current, 3);
 
-	// char *split_path = _km_slice_alloc();
-	// __memcpy(split_path, path, __strlen(path));
+	char *split_path = _km_slice_alloc();
+	__memcpy(split_path, path, __strlen(path));
 
-	// // Quick and dirty last index of
-	// int index = __strlen(split_path) - 1;
-	// while(index >= 0 && split_path[index] != '/') {
-	// 	index--;
-	// }
+	// Quick and dirty last index of
+	int index = __strlen(split_path) - 1;
+	while(index >= 0 && split_path[index] != '/') {
+		index--;
+	}
 
-	// if(index < 0) {
-	// 	RET(_current) = E_BAD_PARAM;
-	// 	return;
-	// }
+	if(index < 0) {
+		RET(_current) = E_BAD_PARAM;
+		return;
+	}
 
-	// inode_t *parent = NULL;
-	// status_t namey_result = namey(path, &parent);
+	inode_t *parent = NULL;
+	status_t namey_result = namey(path, &parent);
+#endif
 
 	RET(_current) = E_NOT_SUPPORTED;
 }
@@ -1298,19 +1316,47 @@ SYSIMPL(fseek)
 	}
 }
 
-SYSIMPL(ciogetcursorpos)
+
+// int32_t chdir(char *path)
+SYSIMPL(fchdir)
 {
-	__cio_getpos((unsigned int *) ARG(_current, 1), (unsigned int *) ARG(_current, 2));
+	char *path = (char *) ARG(_current, 1);
+
+	if(!path) {
+		RET(_current) = E_BAD_PARAM;
+		return;
+	}
+
+	dirent_t *new_cwd = NULL;
+	status_t resolve_status = resolve_path(path, &new_cwd);
+	if(resolve_status != S_OK) {
+		RET(_current) = __status_to_sys_ret(resolve_status);
+		return;
+	}
+
+	if(!new_cwd) {
+		RET(_current) = E_FAILURE;
+		return;
+	}
+
+	_current->cwd = new_cwd;
 }
 
-SYSIMPL(ciosetcursorpos)
+// uint32_t getcwd(char *buffer, uint32_t buffer_len)
+SYSIMPL(fgetcwd)
 {
-	__cio_moveto((unsigned int) ARG(_current, 1), (unsigned int) ARG(_current, 2));
-}
+	char *buffer = (char *) ARG(_current, 1);
+	uint32_t buffer_len = ARG(_current, 2);
 
-SYSIMPL(ciogetspecialdown)
-{
-	RET(_current) = __cio_getarrowdown();
+	if(!buffer) {
+		RET(_current) = 0;
+		return;
+	}
+
+	__memclr(buffer, buffer_len);
+	_vfs_dirent_to_pathname(_current->cwd, buffer);
+
+	RET(_current) = __strlen(buffer);
 }
 
 
@@ -1344,20 +1390,22 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_vgatest ]				   = _sys_vgatest,
 	[ SYS_vgadrawimage ]		   = _sys_vgadrawimage,
 	[ SYS_vgawritepixel ]		   = _sys_vgawritepixel,
+	[ SYS_ciogetcursorpos ]		   = _sys_ciogetcursorpos,
+	[ SYS_ciosetcursorpos ]		   = _sys_ciosetcursorpos,
+	[ SYS_ciogetspecialdown ]      = _sys_ciogetspecialdown,
 
-	[ SYS_fopen    ]              = _sys_fopen,
-	[ SYS_fclose   ]              = _sys_fclose,
-	[ SYS_fread    ]              = _sys_fread,
-	[ SYS_fwrite   ]              = _sys_fwrite,
-	[ SYS_flistdir ]              = _sys_flistdir,
-	[ SYS_fcreate  ]              = _sys_fcreate,
-	[ SYS_fdelete  ]              = _sys_fdelete,
-	[ SYS_fioctl   ]              = _sys_fioctl,
-	[ SYS_fseek    ]              = _sys_fseek,
-	[ SYS_ciogetcursorpos ]		  = _sys_ciogetcursorpos,
-	[ SYS_ciosetcursorpos ]		  = _sys_ciosetcursorpos,
-	[ SYS_ciogetspecialdown ]    = _sys_ciogetspecialdown,
+	[ SYS_fopen    ]               = _sys_fopen,
+	[ SYS_fclose   ]               = _sys_fclose,
+	[ SYS_fread    ]               = _sys_fread,
+	[ SYS_fwrite   ]               = _sys_fwrite,
+	[ SYS_flistdir ]               = _sys_flistdir,
+	[ SYS_fcreate  ]               = _sys_fcreate,
+	[ SYS_fdelete  ]               = _sys_fdelete,
+	[ SYS_fioctl   ]               = _sys_fioctl,
+	[ SYS_fseek    ]               = _sys_fseek,
 
+	[ SYS_fchdir    ]			   = _sys_fchdir,
+	[ SYS_fgetcwd   ]			   = _sys_fgetcwd,
 };
 
 /**

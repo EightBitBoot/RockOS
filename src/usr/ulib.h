@@ -253,6 +253,12 @@ void vgadrawimage( uint16_t width, uint8_t height, uint16_t x_offset, uint8_t y_
 */
 void vgawritepixel( uint16_t x, uint16_t y, uint8_t color );
 
+void ciogetcursorpos(unsigned int *x, unsigned int *y);
+
+void ciosetcursorpos(unsigned int x, unsigned int y);
+
+unsigned int ciogetspecialdown(void);
+
 
 fd_t fopen(char *path, uint32_t mode, uint32_t flags);
 
@@ -262,7 +268,7 @@ uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *
 
 uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
 
-uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status);
+uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status, uint32_t flags);
 
 int32_t fcreate(char *path, uint32_t type, uint32_t flags);
 
@@ -272,11 +278,9 @@ int32_t fioctl(fd_t fd, uint32_t action, void *data);
 
 uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
 
-void ciogetcursorpos(unsigned int *x, unsigned int *y);
+int32_t fchdir(char *path);
 
-void ciosetcursorpos(unsigned int x, unsigned int y);
-
-unsigned int ciogetspecialdown(void);
+uint32_t fgetcwd(char *buffer, uint32_t buffer_len);
 
 /**
 ** bogus - a nonexistent system call, to test our syscall ISR

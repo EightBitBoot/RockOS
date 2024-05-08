@@ -18,7 +18,7 @@ status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
 uint32_t testfs_get_length(kfile_t *file);
 
-status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t buffer_count, uint32_t *num_written);
+status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t buffer_count, uint32_t *num_written, uint32_t flags);
 status_t testfs_lookup(inode_t *inode, dirent_t *dirent);
 
 dirent_t *testfs_mount(fs_type_t *fs_type);
@@ -62,32 +62,48 @@ status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags)
     return S_OK;
 }
 
-status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t buffer_count, uint32_t *num_written)
+status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t buffer_count, uint32_t *num_written, uint32_t flags)
 {
     bogus_node_t *node = FILE_TO_BOGUS_NODE(file);
+    uint32_t total_entries = node->num_children + (flags & LIST_DIR_SUPPRESS_DOTS ? 0 : 2);
 
     if(!num_written) {
         return S_BAD_PARAM;
     }
 
     if(!buffer) {
-        *num_written = node->num_children;
+        *num_written = total_entries;
         return S_OK;
     }
 
-    if(buffer_count < node->num_children) {
+    if(buffer_count < total_entries) {
         return S_TOO_SMALL;
     }
 
-    for(uint32_t i = 0; i < node->num_children; i++) {
-        adinfs_dent_t *dent = buffer + i;
-        CLEAR_PTR(dent);
+    adinfs_dent_t *dest = buffer;
+    if(!(flags & LIST_DIR_SUPPRESS_DOTS)) {
+        CLEAR_PTR(&(buffer[0]));
+        CLEAR_PTR(&(buffer[1]));
 
-        __memcpy(dent->name, node->children[i]->name, __strlen(node->children[i]->name));
-        dent->type = node->inode.i_type;
+        __memcpy(buffer[0].name, ".", 1);
+        buffer[0].type = S_TYPE_DIR;
+
+        __memcpy(buffer[1].name, "..", 2);
+        buffer[1].type = S_TYPE_DIR;
+
+        dest += 2;
     }
 
-    *num_written = node->num_children;
+    for(uint32_t i = 0; i < total_entries; i++) {
+        adinfs_dent_t *dent = dest + i;
+        bogus_node_t *child = node->children[i];
+
+        CLEAR_PTR(dent);
+        __memcpy(dent->name, child->name, __strlen(child->name));
+        dent->type = child->inode.i_type;
+    }
+
+    *num_written = total_entries;
     return S_OK;
 }
 
