@@ -437,7 +437,7 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             draw_test_pattern();
             break;
         case 0x08: // Backspace: Draw Rick Astley
-            draw_rick();
+            draw_image(320, 180, g_rick);
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;

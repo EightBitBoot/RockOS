@@ -93,7 +93,7 @@ void draw_x(void);
 
 void draw_test_pattern(void);
 
-void draw_rick(void);
+void draw_image(uint16_t im_w, uint8_t im_h, uint8_t *image_data);
 
 extern unsigned char g_80x25_text[61];
 

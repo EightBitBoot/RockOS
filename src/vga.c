@@ -250,11 +250,11 @@ void draw_test_pattern(void) {
     }
 }
 
-void draw_rick(void) {
+void draw_image(uint16_t im_w, uint8_t im_h, uint8_t *image_data) {
 	unsigned x, y;
-	for (y = 0; y < 180; y++) {
-		for (x = 0; x < 320; x++) {
-			g_write_pixel(x, y, g_rick[y*319+x]);
+	for (y = 0; y < im_h; y++) {
+		for (x = 0; x < im_w; x++) {
+			g_write_pixel(x, y, image_data[y*im_w+x]);
 		}
 	}
 }
