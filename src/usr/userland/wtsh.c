@@ -9,9 +9,11 @@
 
 #define INTERNAL_COMMAND USERMAIN
 
-// Forward declerations of internal commands
+// Forward declarations of internal commands
 INTERNAL_COMMAND(int_cmd_echo);
 INTERNAL_COMMAND(int_cmd_exit);
+INTERNAL_COMMAND(int_cmd_shutdown);
+INTERNAL_COMMAND(int_cmd_reboot);
 
 typedef struct command_entry
 {
@@ -24,7 +26,9 @@ typedef struct command_entry
 
 command_entry_t g_commands[] = {
     COMMAND_ENTRY("echo", int_cmd_echo, 0),
-    COMMAND_ENTRY("exit", int_cmd_exit, 0)
+    COMMAND_ENTRY("exit", int_cmd_exit, 0),
+    COMMAND_ENTRY("shutdown", int_cmd_shutdown, 0),
+    COMMAND_ENTRY("reboot", int_cmd_reboot, 0)
 };
 
 typedef struct wtsh_state
@@ -52,16 +56,35 @@ USERMAIN(wtsh_main)
 
     cwrites("wtsh> ");
     while(g_shell_state.is_running) {
-        // // I don't like busy loops but that's what happens when you have non-blocking i/o
+        // I don't like busy loops but that's what happens when you have non-blocking i/o
         while(read(CHAN_CIO, in_buf, 2) == E_NO_DATA) {}
 
-        if(IS_PRINTABLE(in_buf[0])) {
-            line_buffer[cursor_pos] = in_buf[0];
+	char c = in_buf[0];
+        if(IS_PRINTABLE(c)) {
+            line_buffer[cursor_pos] = c;
+            cwritech(c);
+
             if(cursor_pos < LINE_BUFFER_SIZE - 1) {
                 cursor_pos++;
             }
+        } else if(c == 0x0A) { // Enter key
+            line_buffer[cursor_pos] = '\0';
+            cwritech('\n');
 
-            // write(CHAN_CIO, line_buffer, cursor_pos + 1); // Do I need to manually echo?
+            // todo: do the thing
+            for (uint8_t i = 0; i < sizeof(g_commands); i++) {
+                command_entry_t cmd = g_commands[i];
+
+                if (strcmp(cmd.name, line_buffer) == 0) {
+                    int32_t pid = spawn(cmd.entrypoint, -1, NULL);
+                    waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
+                    break;
+                }
+            }
+
+            in_buf[0] = 0;
+            cursor_pos = 0;
+            cwrites("wtsh> ");
         }
     }
 
@@ -81,5 +104,16 @@ INTERNAL_COMMAND(int_cmd_exit)
 {
     g_shell_state.is_running = false;
 
+    return 0;
+}
+
+INTERNAL_COMMAND(int_cmd_shutdown)
+{
+    return 0;
+}
+
+INTERNAL_COMMAND(int_cmd_reboot)
+{
+    cwrites("help");
     return 0;
 }
