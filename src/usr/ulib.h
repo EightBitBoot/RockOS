@@ -270,6 +270,10 @@ int32_t fioctl(fd_t fd, uint32_t action, void *data);
 
 uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
 
+void ciogetcursorpos(unsigned int *x, unsigned int *y);
+
+void ciosetcursorpos(unsigned int x, unsigned int y);
+
 /**
 ** bogus - a nonexistent system call, to test our syscall ISR
 **
