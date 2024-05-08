@@ -26,6 +26,7 @@
 #include "io/sio.h"
 #include "io/vgatext.h"
 #include "acpi/acpi.h"
+#include "io/vga.h"
 
 /*
 ** PRIVATE DEFINITIONS
@@ -682,7 +683,7 @@ SYSIMPL(exec)
 }
 
 /**
-** _sys_vgatextclear - clear the VGA Screen
+** _sys_vgatextclear - clear the VGA Text Screen
 ** 
 ** implements:
 **		void vgatextclear( void );
@@ -755,6 +756,97 @@ SYSIMPL(vgatextsetblinkenabled)
 	__vga_text_set_blink_enabled(ARG(_current,1));
 }
 
+/**
+** _sys_vgagetmode - get the current VGA Mode
+**
+** implements:
+**		unsigned int vgagetmode( void );
+**
+** returns:
+** 		0 if Text Mode
+** 		1 if 16-color 640x480 Graphics Mode
+** 		2 if 256-color 320x200 Graphics Mode
+*/
+SYSIMPL(vgagetmode)
+{
+	RET(_current) = __vga_get_mode();
+}
+
+/**
+** _sys_vgasetmode - set the VGA Mode
+** 		0 for Text Mode
+** 		1 for 16-color 640x480 Graphics Mode
+** 		2 for 256-color 320x200 Graphics Mode
+**
+** implements:
+** 		void vgasetmode( unsigned mode );
+**
+** returns:
+** 		only on failure
+*/
+SYSIMPL(vgasetmode)
+{
+	__vga_set_mode(ARG(_current,1));
+}
+
+/**
+** _sys_vgaclear - clear the VGA Screen
+** 
+** implements:
+**		void vgatextclear( void );
+*/
+SYSIMPL(vgaclearscreen)
+{
+	__vga_clear_screen();
+}
+
+/**
+** _sys_vgatest - draw a test pattern for the current graphics mode on the VGA Screen
+** 
+** implements:
+**		void vgatest( void );
+*/
+SYSIMPL(vgatest)
+{
+	__vga_draw_test_pattern();
+}
+
+/**
+** _sys_vgadrawimage - draw an image on the VGA Screen
+**
+** implements:
+** 		void vgadrawimage( uint16_t im_w, uint8_t im_h, uint8_t off_x, uint8_t off_y, uint8_t *image_data );
+** 		im_w: the width of the image
+**		im_h: the height of the image
+**		off_x: the offset from which to draw the image on the x axis, from 0 at the left
+**		off_y: the offset from which to draw the image on the y axis, from 0 at the top
+**		image_data: an array of numbers corresponding to the VGA palette, arranged in rows one after another
+**
+** returns:
+** 		only on failure
+*/
+SYSIMPL(vgadrawimage)
+{
+	__vga_draw_image(ARG(_current,1), ARG(_current,2), ARG(_current,3), ARG(_current,4), ARG(_current,5));
+}
+
+/**
+** _sys_vgawritepixel - write an individual pixel on the VGA Screen
+**
+** implements:
+** 		void vgawritepixel( unsigned x, unsigned y, unsigned c );
+** 		x: the x coordinate of the pixel to plot, from 0 at the left
+**		y: the y coordinate of the pixel to plot, from 0 at the top
+**		c: the number corresponding to the color in the VGA palette
+**
+** returns:
+** 		only on failure
+*/
+SYSIMPL(vgawritepixel)
+{
+	__vga_write_pixel(ARG(_current,1), ARG(_current,2), ARG(_current,3));
+}
+
 // The system call jump table
 //
 // Initialized using designated initializers to ensure the entries
@@ -778,7 +870,13 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_vgatextsetactivecolor ]  = _sys_vgatextsetactivecolor,
 	[ SYS_acpicommand ]            = _sys_acpicommand,
 	[ SYS_vgatextgetblinkenabled ] = _sys_vgatextgetblinkenabled,
-	[ SYS_vgatextsetblinkenabled ] = _sys_vgatextsetblinkenabled
+	[ SYS_vgatextsetblinkenabled ] = _sys_vgatextsetblinkenabled,
+	[ SYS_vgagetmode ]			   = _sys_vgagetmode,
+	[ SYS_vgasetmode ]			   = _sys_vgasetmode,
+	[ SYS_vgaclearscreen ]		   = _sys_vgaclearscreen,
+	[ SYS_vgatest ]				   = _sys_vgatest,
+	[ SYS_vgadrawimage ]		   = _sys_vgadrawimage,
+	[ SYS_vgawritepixel ]		   = _sys_vgawritepixel,
 };
 
 /**

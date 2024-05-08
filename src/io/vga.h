@@ -61,21 +61,14 @@
 #define	VGA_NUM_REGS		(1 + VGA_NUM_SEQ_REGS + VGA_NUM_CRTC_REGS + \
 				VGA_NUM_GC_REGS + VGA_NUM_AC_REGS)
 
-void _reset_flipflop(void);
-
-int _vga_attr_get_index(void);
 
 uint8_t _vga_attr_read(unsigned int index);
 
 void _vga_attr_write(unsigned int index, uint8_t data);
 
-extern unsigned int vga_mode;
+unsigned int __vga_get_mode(void);
 
-unsigned int _vga_get_mode(void);
-
-void _vga_set_registers(unsigned char *regs); 
-
-void _vga_set_mode(unsigned int graphics_text_select);
+void __vga_set_mode(unsigned int graphics_text_select);
 
 extern unsigned char g_80x25_text[];
 
@@ -83,17 +76,19 @@ extern unsigned char g_640x480x16[];
 
 extern unsigned char g_320x200x256[];
 
-void dump_regs(unsigned char *regs);
+void _dump_regs(unsigned char *regs);
 
-void read_regs(unsigned char *regs);
+void _read_regs(unsigned char *regs);
 
-void _vga_clear_screen(void);
+void __vga_clear_screen(void);
 
-void draw_x(void);
+void _draw_x(void);
 
-void draw_test_pattern(void);
+void __vga_draw_test_pattern(void);
 
-void draw_image(uint16_t im_w, uint8_t im_h, uint8_t *image_data);
+void __vga_draw_image(uint16_t im_w, uint8_t im_h, uint8_t off_x, uint8_t off_y, uint8_t *image_data);
+
+extern void (*__vga_write_pixel)(unsigned, unsigned, unsigned);
 
 extern unsigned char g_80x25_text[61];
 

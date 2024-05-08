@@ -411,39 +411,39 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             }
             break;
         case 0x2e: // .
-            switch (_vga_get_mode()) {
+            switch (__vga_get_mode()) {
                 case 0:
-                    _vga_set_mode(1);
+                    __vga_set_mode(1);
                     break;
                 case 1:
-                    _vga_set_mode(2);
+                    __vga_set_mode(2);
                     break;
                 case 2:
-                    _vga_set_mode(0);
+                    __vga_set_mode(0);
                     break;
             }
             break;
         case 0x0a: // Enter
-            read_regs(state);
-            dump_regs(state);
+            _read_regs(state);
+            _dump_regs(state);
             break;
         case 0x2d: // -: Clear Screen (SLOW)
-            _vga_clear_screen();
+            __vga_clear_screen();
             break;
         case 0x3d: // =: Draw blue/green X
-            draw_x();
+            _draw_x();
             break;
         case 0x5c: // \: Draw Gradient
-            draw_test_pattern();
+            __vga_draw_test_pattern();
             break;
         case 0x08: // Backspace: Draw Rick Astley
-            draw_image(320, 180, g_rick);
+            __vga_draw_image(320, 180, 0, 0, g_rick);
             break;
         case 0x5b: // [: Draw Baby Adin
-            draw_image(157, 180, g_adin);
+            __vga_draw_image(157, 180, 0, 0, g_adin);
             break;
         case 0x5d: // ]: Draw Obi-Wan
-            draw_image(320, 135, g_obiwan);
+            __vga_draw_image(320, 135, 0, 0, g_obiwan);
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;

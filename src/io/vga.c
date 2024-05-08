@@ -14,12 +14,14 @@
 // http://www.mcamafia.de/pdf/ibm_vgaxga_trm2.pdf
 // https://fd.lod.bz/rbil/ports/video/p03c003c1.html
 
-void _reset_flipflop() {
+static unsigned int _vga_mode = 0;
+
+static void _reset_flipflop() {
     // Read Input Status #1 to set FlipFlop to Index
     __inb(INPUT_STATUS_1_PORT); // Read port 3DA
 }
 
-int _vga_attr_get_index() {
+static int _vga_attr_get_index() {
     _reset_flipflop();
     return __inb(VGA_ATTR_ADDR_REG_RW);
     _reset_flipflop();
@@ -58,82 +60,75 @@ void _vga_attr_write(unsigned int index, uint8_t data) {
     _reset_flipflop();
 }
 
-unsigned int vga_mode = 0;
-
 /**
  * Get whether VGA is in Text or Graphics Mode
  * Returns 0 if Text Mode
- * Returns 1 if Graphics Mode
+ * Returns 1 if 16-color 640x480 Graphics Mode
+ * Returns 2 if 256-color 320x200 Graphics Mode
 */
-unsigned int _vga_get_mode() {
-    // uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
-    // return attr_mode_ctl & 0b00000001;
-    return vga_mode;
+unsigned int __vga_get_mode() {
+    return _vga_mode;
 }
 
-void _vga_set_registers(unsigned char *regs) {
-unsigned int i;
+static void _vga_set_registers(unsigned char *regs) {
+	unsigned int i;
 
-/* write MISCELLANEOUS reg */
+	// Write Miscellaneous Register */
 	__outb(VGA_MISC_WRITE, *regs);
 	regs++;
-/* write SEQUENCER regs */
-	for(i = 0; i < VGA_NUM_SEQ_REGS; i++)
-	{
+	// Write Sequencer Registers */
+	for(i = 0; i < VGA_NUM_SEQ_REGS; i++) {
 		__outb(VGA_SEQ_INDEX, i);
 		__outb(VGA_SEQ_DATA, *regs);
 		regs++;
 	}
-/* unlock CRTC registers */
+	// Unlock CRTC Registers
 	__outb(VGA_CRTC_INDEX, 0x03);
 	__outb(VGA_CRTC_DATA, __inb(VGA_CRTC_DATA) | 0x80);
 	__outb(VGA_CRTC_INDEX, 0x11);
 	__outb(VGA_CRTC_DATA, __inb(VGA_CRTC_DATA) & ~0x80);
-/* make sure they remain unlocked */
+	// Make sure they remain unlocked
 	regs[0x03] |= 0x80;
 	regs[0x11] &= ~0x80;
-/* write CRTC regs */
-	for(i = 0; i < VGA_NUM_CRTC_REGS; i++)
-	{
+	// Write CRTC Registers
+	for(i = 0; i < VGA_NUM_CRTC_REGS; i++) {
 		__outb(VGA_CRTC_INDEX, i);
 		__outb(VGA_CRTC_DATA, *regs);
 		regs++;
 	}
-/* write GRAPHICS CONTROLLER regs */
-	for(i = 0; i < VGA_NUM_GC_REGS; i++)
-	{
+	// Write Graphics Controller Registers */
+	for(i = 0; i < VGA_NUM_GC_REGS; i++) {
 		__outb(VGA_GC_INDEX, i);
 		__outb(VGA_GC_DATA, *regs);
 		regs++;
 	}
-/* write ATTRIBUTE CONTROLLER regs */
-	for(i = 0; i < VGA_NUM_AC_REGS; i++)
-	{
+	// Write Attribute Controller Registers */
+	for(i = 0; i < VGA_NUM_AC_REGS; i++) {
 		(void)__inb(VGA_INSTAT_READ);
 		__outb(VGA_AC_INDEX, i);
 		__outb(VGA_AC_WRITE, *regs);
 		regs++;
 	}
-/* lock 16-color palette and unblank display */
+	// Lock 16-color Palette and unblank display */
 	(void)__inb(VGA_INSTAT_READ);
 	__outb(VGA_AC_INDEX, 0x20);
 }
 
-static void set_plane(unsigned p)
+static void _set_plane(unsigned p)
 {
 	unsigned char pmask;
 
 	p &= 3;
 	pmask = 1 << p;
-/* set read plane */
+	// Set Read Plane
 	__outb(VGA_GC_INDEX, 4);
 	__outb(VGA_GC_DATA, p);
-/* set write plane */
+	// Set Write Plane
 	__outb(VGA_SEQ_INDEX, 2);
 	__outb(VGA_SEQ_DATA, pmask);
 }
 
-static unsigned get_fb_seg(void)
+static unsigned _get_fb_seg(void)
 {
 	unsigned seg;
 
@@ -145,44 +140,40 @@ static unsigned get_fb_seg(void)
 	{
 	case 0:
 	case 1:
-        _sio_puts("1");
 		seg = 0xA0000;
 		break;
 	case 2:
-        _sio_puts("2");
 		seg = 0xB0000;
 		break;
 	case 3:
-        _sio_puts("3");
 		seg = 0xB8000;
 		break;
 	}
 	return seg;
 }
 
-static void vpokeb(unsigned off, unsigned val)
+static void _vpokeb(unsigned off, unsigned val)
 {
-	unsigned *pokeb = (unsigned*)(get_fb_seg()+off);
+	unsigned *pokeb = (unsigned*)(_get_fb_seg()+off);
     *pokeb = val;
 }
-/*****************************************************************************
-*****************************************************************************/
-static unsigned vpeekb(unsigned off)
+
+static unsigned _vpeekb(unsigned off)
 {
-    unsigned *peekb = (unsigned*)(get_fb_seg()+off);
+    unsigned *peekb = (unsigned*)(_get_fb_seg()+off);
 	return (*peekb);
 }
 
-static void write_pixel_noop(unsigned x, unsigned y, unsigned c) {
+static void _write_pixel_noop(unsigned x, unsigned y, unsigned c) {
     return;
 }
 
-static void (*g_write_pixel)(unsigned, unsigned, unsigned) = write_pixel_noop;
+void (*__vga_write_pixel)(unsigned, unsigned, unsigned) = _write_pixel_noop;
 static unsigned int g_wd = 0;
 static unsigned int g_ht = 0;
 static unsigned int g_c = 0;
 
-static void write_pixel4p(unsigned x, unsigned y, unsigned c)
+static void _write_pixel4p(unsigned x, unsigned y, unsigned c)
 {
 	unsigned wd_in_bytes, off, mask, p, pmask;
 
@@ -191,86 +182,84 @@ static void write_pixel4p(unsigned x, unsigned y, unsigned c)
 	x = (x & 7) * 1;
 	mask = 0x80 >> x;
 	pmask = 1;
-	for(p = 0; p < 4; p++)
-	{
-		set_plane(p);
-		if(pmask & c)
-			vpokeb(off, vpeekb(off) | mask);
-		else
-			vpokeb(off, vpeekb(off) & ~mask);
+	for(p = 0; p < 4; p++) {
+		_set_plane(p);
+		if(pmask & c) {
+			_vpokeb(off, _vpeekb(off) | mask);
+		} else {
+			_vpokeb(off, _vpeekb(off) & ~mask);
+		}
 		pmask <<= 1;
 	}
 }
 
-static void write_pixel8(unsigned x, unsigned y, unsigned c)
+static void _write_pixel8(unsigned x, unsigned y, unsigned c)
 {
 	unsigned wd_in_bytes;
 	unsigned off;
 
 	wd_in_bytes = g_wd;
 	off = wd_in_bytes * y + x;
-	vpokeb(off, c);
+	_vpokeb(off, c);
 }
 
-void _vga_clear_screen(void) {
+void __vga_clear_screen(void) {
     unsigned x, y;
-	unsigned mode = vga_mode;
+	unsigned mode = _vga_mode;
 
-/* clear screen */
+	// Clear Screen
 	for (y = 0; y < 4; y++) {
-		set_plane(y);
+		_set_plane(y);
 		__memclr((unsigned *) 0xA0000, 64000);
 	}
 
-	_vga_set_mode(mode);
+	__vga_set_mode(mode);
 }
 
-void draw_x(void) {
+void _draw_x(void) {
 	unsigned x, y;
 
-/* draw 2-color X */
-	for(y = 0; y < g_ht; y++)
-	{
-		g_write_pixel((g_wd - g_ht) / 2 + y, y, 1);
-		g_write_pixel((g_ht + g_wd) / 2 - y, y, 2);
+	for(y = 0; y < g_ht; y++) {
+		__vga_write_pixel((g_wd - g_ht) / 2 + y, y, 1);
+		__vga_write_pixel((g_ht + g_wd) / 2 - y, y, 2);
 	}
 }
 
-void draw_test_pattern(void) {
+void __vga_draw_test_pattern(void) {
     unsigned x, y;
     unsigned w_frac, h_frac;
-	if (vga_mode == 1) {
+	if (_vga_mode == 1) {
 		w_frac = g_wd/16;
 		h_frac = 1;
-	} else if (vga_mode == 2) {
+	} else if (_vga_mode == 2) {
 		w_frac = g_wd/16;
 		h_frac = g_ht/16;
 	}
 	for (y = 0; y < g_ht; y++) {
         for (x = 0; x < g_wd; x++) {
-			if (vga_mode == 1) {
-				g_write_pixel(x, y, x/w_frac);
-			} else if (vga_mode == 2) {
-				g_write_pixel(x, y, (x/w_frac)+(15*(y/h_frac)));
+			if (_vga_mode == 1) { // Draw a Test Pattern consisting of vertical color bars
+				__vga_write_pixel(x, y, x/w_frac);
+			} else if (_vga_mode == 2) { // Draw a Test Pattern depicting the 256-color Palette
+				__vga_write_pixel(x, y, (x/w_frac)+(15*(y/h_frac)));
 			}
         }
     }
 }
 
-void draw_image(uint16_t im_w, uint8_t im_h, uint8_t *image_data) {
+void __vga_draw_image(uint16_t im_w, uint8_t im_h, uint8_t off_x, uint8_t off_y, uint8_t *image_data) {
 	unsigned x, y;
 	for (y = 0; y < im_h; y++) {
 		for (x = 0; x < im_w; x++) {
-			g_write_pixel(x, y, image_data[y*im_w+x]);
+			__vga_write_pixel(x+off_x, y+off_y, image_data[y*im_w+x]);
 		}
 	}
 }
 
-static void write_font(unsigned char *buf, unsigned font_height)
+static void _write_font(unsigned char *buf, unsigned font_height)
 {
 	unsigned char seq2, seq4, gc4, gc5, gc6;
 	unsigned i;
-	// Save Registers, as well as GC 4 and SEQ 2, since set_plane modifies them too
+	// Save Registers, as well as GC 4 and SEQ 2, since _set_plane modifies them too
 	__outb(VGA_SEQ_INDEX, 2);
 	seq2 = __inb(VGA_SEQ_DATA);
 
@@ -291,10 +280,9 @@ static void write_font(unsigned char *buf, unsigned font_height)
 	gc6 = __inb(VGA_GC_DATA);
 	__outb(VGA_GC_DATA, gc6 & ~0x02);
 	// Write font to plane P4
-	set_plane(2);
+	_set_plane(2);
 	// Write Font 0
-	for(i = 0; i < 256; i++)
-	{
+	for(i = 0; i < 256; i++) {
 		__memcpy(0xA0000+(16384u * 0 + i * 32), buf, font_height);
 		buf += font_height;
 	}
@@ -311,7 +299,7 @@ static void write_font(unsigned char *buf, unsigned font_height)
 	__outb(VGA_GC_DATA, gc6);
 }
 
-static void write_color_palette(uint8_t *palette, unsigned num_colors) {
+static void _write_color_palette(uint8_t *palette, unsigned num_colors) {
 	unsigned i,r,g,b;
 	char buf[32];
 
@@ -322,26 +310,27 @@ static void write_color_palette(uint8_t *palette, unsigned num_colors) {
 	}
 }
 
-static void restore_font(void) {
-	write_font(g_8x16_font, 16);
+static void _restore_font(void) {
+	_write_font(g_8x16_font, 16);
 }
 
 /**
  * Set whether VGA is in Text or Graphics Mode
  * 0 sets Text Mode
- * 1 sets Graphics Mode
+ * 1 sets 16-color 640x480 Graphics Mode
+ * 2 sets 256-color 320x200 Graphics Mode
 */
-void _vga_set_mode(unsigned int target_mode) {
+void __vga_set_mode(unsigned int target_mode) {
     // uint8_t attr_mode_ctl = _vga_attr_read(VGA_ATTR_MODE_CTL);
     switch(target_mode) {
         case 0:
 			_sio_puts("\r\nRestore Font\r\n");
 			_vga_set_registers(g_640x480x16); // I don't know why I need to change to 16-color mode to get the font to restore correctly - judging by the artifacts, it might be something to do with planar?
-			restore_font();
+			_restore_font();
 			_sio_puts("\r\nRestore Color Palette\r\n");
-			write_color_palette(g_16_color_palette, 64);
-            vga_mode = 0;
-			g_write_pixel = write_pixel_noop;
+			_write_color_palette(g_16_color_palette, 64);
+            _vga_mode = 0;
+			__vga_write_pixel = _write_pixel_noop;
 			g_wd = 0;
 			g_ht = 0;
 			g_c = 16;
@@ -350,8 +339,8 @@ void _vga_set_mode(unsigned int target_mode) {
             __cio_clearscreen();
             break;
         case 1:
-            vga_mode = 1;
-			g_write_pixel = write_pixel4p;
+            _vga_mode = 1;
+			__vga_write_pixel = _write_pixel4p;
 			g_wd = 640;
 			g_ht = 480;
 			g_c = 16;
@@ -359,103 +348,97 @@ void _vga_set_mode(unsigned int target_mode) {
             _vga_set_registers(g_640x480x16);
             break;
 		case 2:
-			vga_mode = 2;
-			g_write_pixel = write_pixel8;
+			_vga_mode = 2;
+			__vga_write_pixel = _write_pixel8;
 			g_wd = 320;
 			g_ht = 200;
 			g_c = 256;
-			write_color_palette(g_256_color_palette, 256);
+			_write_color_palette(g_256_color_palette, 256);
 			_sio_puts("\r\nEnter 256-color 320x200 Graphics Mode\r\n");
 			_vga_set_registers(g_320x200x256);
 			break;
     }
 }
 
-static void dump(unsigned char *regs, unsigned count)
+static void _reg_dump(unsigned char *regs, unsigned count)
 {
 	unsigned i;
 
 	i = 0;
 	__cio_printf("\t");
-	for(; count != 0; count--)
-	{
+	for(; count != 0; count--) {
 		__cio_printf("0x%02x,", *regs);
 		i++;
-		if(i >= 8)
-		{
+		if(i >= 8) {
 			i = 0;
 			__cio_printf("\n\t");
-		}
-		else
+		} else {
 			__cio_printf(" ");
+		}
 		regs++;
 	}
 	__cio_printf("\n");
 }
 
-void dump_regs(unsigned char *regs)
+void _dump_regs(unsigned char *regs)
 {
 	__cio_printf("unsigned char g_mode[] =\n");
 	__cio_printf("{\n");
-/* dump MISCELLANEOUS reg */
+	// Dump Miscellaneous Register
 	__cio_printf("/* MISC */\n");
 	__cio_printf("\t0x%02x,\n", *regs);
 	regs++;
-/* dump SEQUENCER regs */
+	// Dump Sequencer Registers
 	__cio_printf("/* SEQ */\n");
-	dump(regs, VGA_NUM_SEQ_REGS);
+	_reg_dump(regs, VGA_NUM_SEQ_REGS);
 	regs += VGA_NUM_SEQ_REGS;
-/* dump CRTC regs */
+	// Dump CRTC Register
 	__cio_printf("/* CRTC */\n");
-	dump(regs, VGA_NUM_CRTC_REGS);
+	_reg_dump(regs, VGA_NUM_CRTC_REGS);
 	regs += VGA_NUM_CRTC_REGS;
-/* dump GRAPHICS CONTROLLER regs */
+	// Dump Graphics Controller Registers
 	__cio_printf("/* GC */\n");
-	dump(regs, VGA_NUM_GC_REGS);
+	_reg_dump(regs, VGA_NUM_GC_REGS);
 	regs += VGA_NUM_GC_REGS;
-/* dump ATTRIBUTE CONTROLLER regs */
+	// Dump Attribute Controller Registers
 	__cio_printf("/* AC */\n");
-	dump(regs, VGA_NUM_AC_REGS);
+	_reg_dump(regs, VGA_NUM_AC_REGS);
 	regs += VGA_NUM_AC_REGS;
 	__cio_printf("};\n");
 }
 
-void read_regs(unsigned char *regs) {
+void _read_regs(unsigned char *regs) {
 	unsigned i;
 
-/* read MISCELLANEOUS reg */
+	// Read Miscellaneous Register
 	*regs = __inb(VGA_MISC_READ);
 	regs++;
-/* read SEQUENCER regs */
-	for(i = 0; i < VGA_NUM_SEQ_REGS; i++)
-	{
+	// Read Sequencer Registers
+	for(i = 0; i < VGA_NUM_SEQ_REGS; i++) {
 		__outb(VGA_SEQ_INDEX, i);
 		*regs = __inb(VGA_SEQ_DATA);
 		regs++;
 	}
-/* read CRTC regs */
-	for(i = 0; i < VGA_NUM_CRTC_REGS; i++)
-	{
+	// Read CRTC Registers
+	for(i = 0; i < VGA_NUM_CRTC_REGS; i++) {
 		__outb(VGA_CRTC_INDEX, i);
 		*regs = __inb(VGA_CRTC_DATA);
 		regs++;
 	}
-/* read GRAPHICS CONTROLLER regs */
-	for(i = 0; i < VGA_NUM_GC_REGS; i++)
-	{
+	// Read Graphics Controller Registers
+	for(i = 0; i < VGA_NUM_GC_REGS; i++) {
 		__outb(VGA_GC_INDEX, i);
 		*regs = __inb(VGA_GC_DATA);
 		regs++;
 	}
-/* read ATTRIBUTE CONTROLLER regs */
-	for(i = 0; i < VGA_NUM_AC_REGS; i++)
-	{
+	// Read Attribute Controller Registers
+	for(i = 0; i < VGA_NUM_AC_REGS; i++) {
 		(void)__inb(VGA_INSTAT_READ);
 		__outb(VGA_AC_INDEX, i);
 		*regs = __inb(VGA_AC_READ);
 		regs++;
 	}
-/* lock 16-color palette and unblank display */
+	// Lock 16-color Palette and unblank display
 	(void)__inb(VGA_INSTAT_READ);
 	__outb(VGA_AC_INDEX, 0x20);
 }
