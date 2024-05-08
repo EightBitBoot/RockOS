@@ -195,6 +195,8 @@ unsigned int vgatextgetactivecolor( void );
 */
 void vgatextsetactivecolor( unsigned int color );
 
+void acpicommand( int );
+
 /**
 ** vgagetmode - get the current active VGA Mode
 **

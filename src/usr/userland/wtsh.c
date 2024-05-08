@@ -160,14 +160,25 @@ INTERNAL_COMMAND(int_cmd_exit)
     return 0;
 }
 
+/* ACPI */
+#include <acpi/acpi.h>
 INTERNAL_COMMAND(int_cmd_shutdown)
 {
+    cwrites("Broadcast message\n\n");
+    cwrites("The system is going down for shutdown NOW!\n");
+
+    acpicommand(ACPI_COMMAND_SHUTDOWN);
+
     return 0;
 }
 
 INTERNAL_COMMAND(int_cmd_reboot)
 {
-    cwrites("help");
+    cwrites("Broadcast message\n\n");
+    cwrites("The system is going down for reboot NOW!\n");
+
+    acpicommand(ACPI_COMMAND_REBOOT);
+
     return 0;
 }
 
