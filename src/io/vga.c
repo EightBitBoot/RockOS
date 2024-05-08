@@ -1,6 +1,6 @@
 #include "vga.h"
-#include "lib.h"
-#include "ulib.h"
+#include "libc/lib.h"
+#include "usr/ulib.h"
 #define SP_KERNEL_SRC
 #include "common.h"
 #include "sio.h"
