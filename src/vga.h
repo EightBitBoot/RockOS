@@ -105,7 +105,7 @@ extern unsigned char g_8x16_font[4096];
 
 extern uint8_t g_rick[57600];
 
-extern uint8_t backup_color_palette[768];
+extern uint8_t g_16_color_palette[256];
 
 extern uint8_t g_256_color_palette[768];
 

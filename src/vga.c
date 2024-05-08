@@ -308,39 +308,19 @@ static void write_color_palette(uint8_t *palette, unsigned num_colors) {
 	unsigned i,r,g,b;
 	char buf[32];
 
-	sprint(buf, "\r\nPEL: %x", __inb(0x3C6));
-	_sio_puts(buf);
 	__outb(0x3C6,0xFF);
-	__outb(0x3C8,0);
-	for (i = 0; i < 256; i++) {
-		r = __inb(0x3C9)<<2;
-		g = __inb(0x3C9)<<2;
-		b = __inb(0x3C9)<<2;
-		sprint(buf, "\r\ni:%d,rgb:%d,%d,%d",i,r,g,b);
-		_sio_puts(buf);
-	}
 	__outb(0x3C8,0);
 	for (i = 0; i < num_colors*3; i++) {
 		__outb(0x3C9,palette[i]);
+		if (i % 3 == 0) {
+			sprint(buf, "\r\ni:%d,rgb:%d,%d,%d", i, palette[i], palette[i+1], palette[i+2]);
+			_sio_puts(buf);
+		}
 	}
 }
 
 static void restore_font(void) {
 	write_font(g_8x16_font, 16);
-    // unsigned x, y, i;
-	// char buf[24];
-	// for (i = 0; i < 4; i++) {
-	// 	sprint(buf, "\r\nPlane %d... ", i);
-	// 	_sio_puts(buf);
-	// 	set_plane(i);
-	// 	__memcpy((unsigned*) 0xA0000+(64000*i), font_backup, 64000);
-	// 	_sio_puts("Restored!");
-	// }
-    // for (y = 0; y < g_ht; y++) {
-    //     for (x = 0; x < g_wd; x++) {
-	// 		write_pixel4p(x, y, font_backup[x*480+y]);
-    //     }
-    // }
 }
 
 /**
@@ -353,9 +333,15 @@ void _vga_set_mode(unsigned int target_mode) {
     switch(target_mode) {
         case 0:
 			_sio_puts("\r\nRestore Font\r\n");
-			_vga_set_registers(g_640x480x16);
+			_vga_set_registers(g_640x480x16); // I don't know why I need to change to 16-color mode to get the font to restore correctly - judging by the artifacts, it might be something to do with planar?
 			restore_font();
+			_sio_puts("\r\nRestore Color Palette\r\n");
+			write_color_palette(g_16_color_palette, 64);
             vga_mode = 0;
+			g_write_pixel = write_pixel_noop;
+			g_wd = 0;
+			g_ht = 0;
+			g_c = 16;
             _sio_puts("\r\nEnter Text Mode\r\n");    
             _vga_set_registers(g_80x25_text);
             __cio_clearscreen();
