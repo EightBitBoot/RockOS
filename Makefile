@@ -35,11 +35,10 @@ VPATH ::= $(subst " ",:,$(shell find $(SRC_DIR) -type d))
 
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c     \
 	   	   syscalls.c vgatext.c acpi/acpi.c acpi/aml.c acpi/checksum.c         \
-		   acpi/tables/rsdp.c acpi/tables/sdt.c vga.c vgaconst.c 						       \
-		   acpi/tables/sdt.c acpi/aml.c                             		   \
+		   acpi/tables/rsdp.c acpi/tables/sdt.c vga.c vgaconst.c       		   \
 																			   \
 		   util/kstring.c util/slab_cache.c 								   \
-		   vfs/inode.c vfs/namey.c vfs/testfs/testfs.c vfs/testfs/bogus_data.c
+		   vfs/vfs.c vfs/namey.c vfs/testfs/testfs.c vfs/testfs/bogus_data.c
 
 OS_S_SRC =
 
