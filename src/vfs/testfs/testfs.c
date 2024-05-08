@@ -14,6 +14,7 @@
 status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags);
 status_t testfs_close_file(kfile_t *file);
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
+status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint32_t offset, uint32_t flags, uint32_t *num_written);
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data);
 uint32_t testfs_get_length(kfile_t *file);
 
@@ -38,6 +39,7 @@ static kfile_ops_t testfs_file_ops = {
     .open = testfs_open,
     .close = testfs_close_file,
     .read = testfs_file_read,
+    .write = testfs_file_write,
     .ioctl = testfs_ioctl,
     .get_length = testfs_get_length,
 };
@@ -127,12 +129,17 @@ status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data)
 
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read)
 {
-    if(!buffer || !num_read) {
+    if(!num_read) {
+        return E_BAD_PARAM;
+    }
+
+    if(!num_read) {
+        *num_read = 0;
         return E_BAD_PARAM;
     }
 
     bogus_node_t *node = FILE_TO_BOGUS_NODE(file);
-    uint32_t data_len = __strlen(node->name);
+    uint32_t data_len = testfs_get_length(file);
 
     if(offset > data_len) {
         *num_read = 0;
@@ -144,7 +151,7 @@ status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uin
     // (data_len - offset) will never underflow because of the (offset > data_len)
     // check above
     uint32_t num_actually_read = INT_MIN(data_len - offset, num_to_read);
-    __memcpy(buffer, node->name + offset, num_actually_read);
+    __memcpy(buffer, node->data + offset, num_actually_read);
 
     if(num_actually_read < num_to_read || data_len - offset == num_to_read) {
         result = S_EOF;
@@ -154,10 +161,52 @@ status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uin
     return result;
 }
 
+status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint32_t offset, uint32_t flags, uint32_t *num_written)
+{
+    if(!num_written) {
+        return S_BAD_PARAM;
+    }
+
+    if(!file) {
+        *num_written = 0;
+        return S_BAD_PARAM;
+    }
+
+    bogus_node_t *node = FILE_TO_BOGUS_NODE(file);
+    if(!node->data) {
+        // Not returned anywhere else so this will uniquely identify the issue
+        return S_ERR;
+    }
+
+    uint32_t file_len_before = testfs_get_length(file);
+
+    // TODO(Adin): Un-hardcode 4096
+    if(file_len_before == 4096) {
+        return S_NOMEM;
+    }
+
+    // TODO(Adin): Un-hardcode this
+    // 4096 byte page backings for files
+    // (4096 - offset) will never underflow. 2 cases:
+    //     a) offset is < 4096
+    //     b) offset == 4096 (read and fseek clamp the max kf_rwhead to file_length
+    //        and this line itself prevents writing off the end of the file data
+    //        backing)
+    uint32_t num_to_write = INT_MIN(num_bytes, 4096 - offset);
+    __memcpy(node->data + offset, buffer, num_to_write);
+
+    if(offset + num_to_write > file_len_before) {
+        node->length += (offset + num_to_write) - file_len_before;
+    }
+
+    *num_written = num_to_write;
+    return S_OK;
+}
+
 uint32_t testfs_get_length(kfile_t *file)
 {
     // TODO(Adin): Adjust this for ram-backed, writable files
-    return __strlen(FILE_TO_BOGUS_NODE(file)->name);
+    return FILE_TO_BOGUS_NODE(file)->length;
 }
 
 static super_block_t *testfs_super_block = NULL;
@@ -213,12 +262,16 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
 
 status_t testfs_init(void)
 {
+    __init_bogus_nodes();
+
     _vfs_register_fs_type(&testfs_fs_type);
     return E_SUCCESS;
 }
 
 status_t testfs_deinit(void)
 {
+    __deinit_bogus_nodes();
+
     // TODO(Adin): Unregister fs type here
     return E_SUCCESS;
 }

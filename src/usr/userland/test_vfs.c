@@ -262,6 +262,67 @@ void test_fseek(void)
     fclose(passwd_fd);
 }
 
+void test_write(void)
+{
+    char read_buffer[READ_BUFFER_LEN] = {};
+    char *message = "sudo:x:27:adin";
+
+    fd_t group_fd = fopen("/etc/group", O_RDWR, 0);
+    int32_t status = 0;
+    uint32_t pos_before = fseek(group_fd, 0, SEEK_CURR, NULL);
+    uint32_t num_written = fwrite(group_fd, message, __strlen(message), 0, &status);
+    uint32_t pos_after = fseek(group_fd, 0, SEEK_CURR, NULL);
+
+    fseek(group_fd, 0, SEEK_SET, NULL);
+    fread(group_fd, read_buffer, pos_after, 0, NULL);
+
+    printf(
+        "group_fd: %d, pos_before: %d, status: %d, num_written: %d, pos_after: %d, read_buffer: \"%s\"\n",
+        group_fd, pos_before, status, num_written, pos_after, read_buffer
+    );
+
+    fclose(group_fd);
+    __memclr(read_buffer, READ_BUFFER_LEN);
+
+    // ----------------------------------------------------
+
+    fd_t libgdi_fd = fopen("/usr/lib/libgdi.so", O_RDWR, 0);
+    for(uint16_t i = 0; i < 2048; i++) {
+        num_written = fwrite(libgdi_fd, &i, sizeof(i), 0, &status);
+        pos_after = fseek(libgdi_fd, 0, SEEK_CURR, NULL);
+        printf(
+            "Wrote %d to %s (fd %d): status %d, pos_after %d, num_written: %d\n",
+            i, "/.../libgdi.so", libgdi_fd, status, pos_after, num_written
+        );
+        // sleep(25);
+    }
+
+    printf("Writing 2048 to libgdi.so\n");
+    uint16_t overflow = 2048;
+    pos_before = fseek(libgdi_fd, 0, SEEK_CURR, NULL);
+    num_written = fwrite(libgdi_fd, &overflow, sizeof(overflow), 0, &status);
+    pos_after = fseek(libgdi_fd, 0, SEEK_CURR, NULL);
+    printf(
+        "libgdi_fd: %d, pos_before %d, status: %d, num_written: %d, pos_after: %d\n",
+        libgdi_fd, pos_before, status, num_written, pos_after
+    );
+    printf("Sleeping for 10 seconds so output can be read\n");
+    sleep(10000);
+    printf("Good morning Krusty Krew!\n");
+
+    fseek(libgdi_fd, 0, SEEK_SET, NULL);
+    for(int i = 0; i < 2048; i++) {
+        fread(libgdi_fd, read_buffer, sizeof(uint16_t), 0, NULL);
+        printf("Read value %d from /usr/lib/libgdi.so\n", *((uint16_t *) read_buffer));
+        // sleep(25);
+        sleep(10);
+    }
+
+    fclose(libgdi_fd);
+
+    printf("Goodbye world!\n");
+}
+
 USERMAIN(test_vfs)
 {
     // cwrites("Hello world!\n");
@@ -270,7 +331,8 @@ USERMAIN(test_vfs)
     // test_rw_locks();
     // test_fioctl();
     // test_read();
-    test_fseek();
+    // test_fseek();
+    test_write();
 
     return 0;
 }

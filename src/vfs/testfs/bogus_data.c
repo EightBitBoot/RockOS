@@ -1,6 +1,8 @@
 
 #include "bogus_data.h"
 
+#include "mem/kmem.h"
+
 /**
  * I wanted to dynamically allocate these, but nooooooo, we have to go and have
  * a simple slab allocator.
@@ -44,18 +46,38 @@ bogus_node_t *bogus_all_nodes[BOGUS_NUM_NODES] = {
     &bogus_chattr_node
 };
 
+void __init_bogus_nodes(void)
+{
+    bogus_passwd_node.data = _km_page_alloc(1);
+    bogus_group_node.data = _km_page_alloc(1);
+
+    bogus_libgdi_node.data = _km_page_alloc(1);
+
+    bogus_chattr_node.data = _km_page_alloc(1);
+}
+
+void __deinit_bogus_nodes(void)
+{
+    _km_page_free(bogus_passwd_node.data);
+    _km_page_free(bogus_group_node.data);
+
+    _km_page_free(bogus_libgdi_node.data);
+
+    _km_page_free(bogus_chattr_node.data);
+}
+
 bogus_node_t bogus_root_node = {
     .name = "/",
     .parent = &bogus_root_node,
     .children = {&bogus_etc_node, &bogus_usr_node},
-    .num_children = 2
+    .num_children = 2,
 };
 
 static bogus_node_t bogus_etc_node = {
     .name = "etc",
     .parent = &bogus_root_node,
     .children = {&bogus_passwd_node, &bogus_group_node},
-    .num_children = 2
+    .num_children = 2,
 };
 
 static bogus_node_t bogus_passwd_node = {

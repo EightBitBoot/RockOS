@@ -875,6 +875,9 @@ static int32_t __status_to_sys_ret(status_t status)
 		case S_EOF:
 			return E_EOF;
 
+		case S_NOMEM:
+			return E_NO_MEM;
+
 		case S_OK:
 			return E_SUCCESS;
 
@@ -1048,10 +1051,51 @@ SYSIMPL(fread)
 	}
 }
 
-// uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags);
+// uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
 SYSIMPL(fwrite)
 {
+	fd_t fd            = ARG(_current, 1);
+	void *buf          = (void *) ARG(_current, 2);
+	uint32_t num_bytes = ARG(_current, 3);
+	uint32_t flags     = ARG(_current, 4);
+	int32_t *status    = (int32_t *) ARG(_current, 5);
 
+	if(IS_BAD_FD(fd) || !buf) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_PARAM;
+		}
+		return;
+	}
+
+	kfile_t *target = _current->open_files[fd];
+	if(!(target->kf_mode & O_WRITE)) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_BAD_ACTION;
+		}
+		return;
+	}
+
+	if(!target->kf_ops || !target->kf_ops->write) {
+		RET(_current) = 0;
+		if(status) {
+			*status = E_NOT_SUPPORTED;
+		}
+		return;
+	}
+
+	uint32_t num_written = 0;
+	uint32_t offset = (target->kf_inode->i_type == S_TYPE_DEV ? 0 : target->kf_rwhead);
+
+	status_t write_status = target->kf_ops->write(target, buf, num_bytes, offset, flags, &num_written);
+
+	target->kf_rwhead += num_written;
+
+	RET(_current) = num_written;
+	if(status) {
+		*status = __status_to_sys_ret(write_status);
+	}
 }
 
 // // TODO(Adin): flistdir (what should the params be)

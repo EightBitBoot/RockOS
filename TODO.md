@@ -5,7 +5,7 @@
   - [x] open
   - [x] close
   - [x] read
-  - [ ] write
+  - [x] write
   - [ ] listdir
   - [ ] create
   - [ ] delete

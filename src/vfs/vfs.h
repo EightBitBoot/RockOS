@@ -130,16 +130,20 @@ struct kfile_ops
     // TODO(Adin): Change this so it doesn't need the userspace buffer to be passed
     int (*iterate_shared)(kfile_t *file, adinfs_dent_t buffer[], uint32_t buffer_count); // TODO(Adin): Add more params as needed
 
-    // A generic, optional callback to perform a specific action on a file (or the inode it represents)
-    // This is completely fs driver dependent and, unlike posix, there are no default actions; meaning if the
-    // driver doesn't support it, the fioctl syscall will return E_NOT_SUPPORTED.
-    status_t (*ioctl)(kfile_t *file, uint32_t action, void *data);
-
     // Read data from a file into a userspace-supplied buffer. Because this isn't the fanciest vfs in the world, (and not intended
     // to support the fanciest fs drivers either) read / write heads are handled by the vfs instead of the fs driver itself. As a
     // consequence, the vfs passes the offset in instead of requesting it from the driver. In the case where the user is trying to
     // read off the end of the file, the fs driver should return an error status and set the number of bytes read to 0.
     status_t (*read)(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
+
+    // Same as read but in the opposite direction (writing past the end of a file will extend its length)
+    status_t (*write)(kfile_t *file, void *buffer, uint32_t num_to_write, uint32_t offset, uint32_t flags, uint32_t *num_written);
+
+    // A generic, optional callback to perform a specific action on a file (or the inode it represents)
+    // This is completely fs driver dependent and, unlike posix, there are no default actions; meaning if the
+    // driver doesn't support it, the fioctl syscall will return E_NOT_SUPPORTED.
+    status_t (*ioctl)(kfile_t *file, uint32_t action, void *data);
+
 
     // Get the length of a file. This isn't _strictly_ required, but without it, fseek will fail (which is
     // pretty unusual for a vfs) so you better implement it in your fs drivers. Yeah I'm looking at you. I
