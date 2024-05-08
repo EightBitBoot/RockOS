@@ -57,6 +57,7 @@ USERMAIN(wtsh_main)
     char in_buf[2] = {};
     char line_buffer[LINE_BUFFER_SIZE] = {};
     char out[32] = {};
+    int x, y = 0;
     bool_t cmd_found = 0;
     uint8_t cursor_pos = 0;
 
@@ -84,8 +85,8 @@ USERMAIN(wtsh_main)
                 command_entry_t cmd = g_commands[i];
 
                 if (strcmp(cmd.name, line_buffer) == 0) {
+                    cmd_found = 1;
                     if(cmd.is_subprocess) {
-                        cmd_found = 1;
                         int32_t pid = spawn(cmd.entrypoint, -1, NULL);
                         waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
                     }
@@ -106,6 +107,19 @@ USERMAIN(wtsh_main)
             in_buf[0] = 0;
             cursor_pos = 0;
             cwrites("wtsh> ");
+        } else if (c == 0x08) { // Backspace
+            if (cursor_pos > 0) {
+                cursor_pos--;
+                line_buffer[cursor_pos] = '\0';
+
+                ciogetcursorpos(&x, &y);
+                ciosetcursorpos(x-1, y);
+                cwritech(' ');
+                ciosetcursorpos(x-1, y);
+            }
+        } else {
+            sprint(out, "Unprintable Input: %02x\n", c);
+            cwrites(out);
         }
     }
 

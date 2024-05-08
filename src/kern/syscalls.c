@@ -1298,6 +1298,16 @@ SYSIMPL(fseek)
 	}
 }
 
+SYSIMPL(ciogetcursorpos)
+{
+	__cio_getpos((unsigned int *) ARG(_current, 1), (unsigned int *) ARG(_current, 2));
+}
+
+SYSIMPL(ciosetcursorpos)
+{
+	__cio_moveto((unsigned int) ARG(_current, 1), (unsigned int) ARG(_current, 2));
+}
+
 
 // The system call jump table
 //
@@ -1339,6 +1349,8 @@ static void (* const _syscalls[N_SYSCALLS])( void ) = {
 	[ SYS_fdelete  ]              = _sys_fdelete,
 	[ SYS_fioctl   ]              = _sys_fioctl,
 	[ SYS_fseek    ]              = _sys_fseek,
+	[ SYS_ciogetcursorpos ]		  = _sys_ciogetcursorpos,
+	[ SYS_ciosetcursorpos ]		  = _sys_ciosetcursorpos,
 
 };
 

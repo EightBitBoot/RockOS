@@ -56,8 +56,11 @@
 #define  SYS_fioctl                 29
 #define  SYS_fseek                  30
 
+#define  SYS_ciogetcursorpos           31
+#define  SYS_ciosetcursorpos           32
+
 // UPDATE THIS DEFINITION IF MORE SYSCALLS ARE ADDED!
-#define N_SYSCALLS      31
+#define N_SYSCALLS      33
 
 // dummy system call code for testing our ISR
 #define SYS_bogus       0xbad

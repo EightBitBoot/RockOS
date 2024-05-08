@@ -101,6 +101,14 @@ void __cio_setscroll( unsigned int min_x, unsigned int min_y,
           unsigned int max_x, unsigned int max_y );
 
 /*
+** Name:    __cio_getpos
+**
+** Description: This gets the current cursor position.
+** Arguments: Pointers to be used for returning results.
+*/
+void __cio_getpos( unsigned int *x, unsigned int *y);
+
+/*
 ** Name:    __cio_moveto
 **
 ** Description: Moves the cursor to the specified position. (0,0) indicates

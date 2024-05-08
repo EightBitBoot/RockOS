@@ -119,6 +119,14 @@ void __cio_setscroll( unsigned int s_min_x, unsigned int s_min_y,
 }
 
 /*
+** Retrieve current cursor position
+*/
+void __cio_getpos( unsigned int *x, unsigned int *y) {
+    *x = curr_x;
+    *y = curr_y;
+}
+
+/*
 ** Cursor movement in the scroll region
 */
 void __cio_moveto( unsigned int x, unsigned int y ) {
