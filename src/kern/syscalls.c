@@ -1145,16 +1145,37 @@ SYSIMPL(flistdir)
 	}
 }
 
-// int32_t fcreate(char *path, uint32_t flags);
+// int32_t fcreate(char *path, uint32_t type, uint32_t flags);
 SYSIMPL(fcreate)
 {
+	// char *path     = (char *) ARG(_current, 1);
+	// uint32_t type  = ARG(_current, 2);
+	// uint32_t flags = ARG(_current, 3);
 
+	// char *split_path = _km_slice_alloc();
+	// __memcpy(split_path, path, __strlen(path));
+
+	// // Quick and dirty last index of
+	// int index = __strlen(split_path) - 1;
+	// while(index >= 0 && split_path[index] != '/') {
+	// 	index--;
+	// }
+
+	// if(index < 0) {
+	// 	RET(_current) = E_BAD_PARAM;
+	// 	return;
+	// }
+
+	// inode_t *parent = NULL;
+	// status_t namey_result = namey(path, &parent);
+
+	RET(_current) = E_NOT_SUPPORTED;
 }
 
 // int32_t fdelete(char *path, uint32_t flags);
 SYSIMPL(fdelete)
 {
-
+	RET(_current) = E_NOT_SUPPORTED;
 }
 
 // int32_t fioctl(fd_t fd, uint32_t action, void *data);
