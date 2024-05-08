@@ -1328,6 +1328,7 @@ SYSIMPL(fchdir)
 	}
 
 	dirent_t *new_cwd = NULL;
+	// __cio_printf("fchdir path %s\n", path);
 	status_t resolve_status = resolve_path(path, &new_cwd);
 	if(resolve_status != S_OK) {
 		RET(_current) = __status_to_sys_ret(resolve_status);
@@ -1340,6 +1341,7 @@ SYSIMPL(fchdir)
 	}
 
 	_current->cwd = new_cwd;
+	RET(_current) = E_SUCCESS;
 }
 
 // uint32_t getcwd(char *buffer, uint32_t buffer_len)

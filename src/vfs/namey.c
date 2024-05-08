@@ -39,6 +39,7 @@ status_t resolve_path(char *path, dirent_t **result)
         if(KSTR_IS_EQUAL(&curr_component, &dot_dot_str)) {
             // Will always work becuase root's parent is itself
             curr_dirent = curr_dirent->parent;
+            continue;
         }
 
         dirent_t *cached_dirent = _vfs_dirent_lookup_child(curr_dirent, &curr_component);

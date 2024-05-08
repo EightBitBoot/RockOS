@@ -4,6 +4,7 @@
 #include "usr/ulib.h"
 #include "io/vga.h"
 #include "io/vgatext.h"
+#include "libc/lib.h"
 
 #define ARRAY_LEN(array) (sizeof((array)) / sizeof(*(array)))
 
@@ -50,16 +51,58 @@ command_entry_t g_commands[] = {
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
 
+#define ARG_ARENA_LEN 2048
+#define SH_PRINT_BUFFER_LEN 2048
+
 typedef struct wtsh_state
 {
     bool_t is_running;
+    char arg_arena[ARG_ARENA_LEN];
+    char print_buffer[SH_PRINT_BUFFER_LEN];
 } wtsh_state_t;
 
 static wtsh_state_t g_shell_state;
 
+#define sh_printf(fmt, ...) \
+    sprint(g_shell_state.print_buffer, (fmt) , ##__VA_ARGS__); cwrites(g_shell_state.print_buffer)
+
 void init_state(wtsh_state_t *state)
 {
     state->is_running = true;
+}
+
+int prep_arguments(char *line_buffer)
+{
+    __memclr(g_shell_state.arg_arena, ARG_ARENA_LEN);
+
+    char *curr_pos = line_buffer;
+
+    char *line_last_start = line_buffer;
+    void *arena_last_start = g_shell_state.arg_arena + ARG_ARENA_LEN;
+    int argv_index = 0;
+
+    while(*curr_pos) {
+        if(*curr_pos == ' ') {
+            uint32_t arg_len = curr_pos - line_last_start; // (Not including null terminator)
+            __memcpy(arena_last_start - arg_len - 1, line_last_start, arg_len);
+            arena_last_start = arena_last_start - arg_len - 1;
+            ((char **) g_shell_state.arg_arena)[argv_index] = arena_last_start;
+            line_last_start = curr_pos + 1;
+            argv_index++;
+        }
+
+        curr_pos++;
+    }
+
+    // Once more for the last argument
+    uint32_t arg_len = curr_pos - line_last_start; // (Not including null terminator)
+    __memcpy(arena_last_start - arg_len - 1, line_last_start, arg_len);
+    arena_last_start = arena_last_start - arg_len - 1;
+    ((char **) g_shell_state.arg_arena)[argv_index] = arena_last_start;
+    line_last_start = curr_pos + 1;
+    argv_index++;
+
+    return argv_index;
 }
 
 #define IS_PRINTABLE(c) (0x20 <= (c) && (c) <= 0x7E)
@@ -68,7 +111,7 @@ void init_state(wtsh_state_t *state)
 USERMAIN(wtsh_main)
 {
     char in_buf[2] = {};
-    char line_buffer[LINE_BUFFER_SIZE] = {};
+    char line_buffer[LINE_BUFFER_SIZE + 1] = {}; // Null terminated after all
     char out[32] = {};
     int x, y = 0;
     bool_t cmd_found = 0;
@@ -122,18 +165,21 @@ USERMAIN(wtsh_main)
                 line_buffer[cursor_pos] = '\0';
                 cwritech('\n');
                 cmd_found = 0;
+
+                int argc = prep_arguments(line_buffer);
+
                 // todo: do the thing
                 for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
                     command_entry_t cmd = g_commands[i];
 
-                    if (strcmp(cmd.name, line_buffer) == 0) {
+                    if (strcmp(cmd.name, ((char **) (g_shell_state.arg_arena))[0]) == 0) {
                         cmd_found = 1;
                         if(cmd.is_subprocess) {
                             int32_t pid = spawn(cmd.entrypoint, -1, NULL);
                             waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
                         }
                         else {
-                            cmd.entrypoint(0, NULL);
+                            cmd.entrypoint(argc, (char **) (g_shell_state.arg_arena));
                         }
                         break;
                     }
@@ -201,6 +247,15 @@ INTERNAL_COMMAND(int_cmd_help)
 
 INTERNAL_COMMAND(int_cmd_echo)
 {
+    for(int i = 1; i < argc; i++) {
+        cwrites(argv[i]);
+        if (i != argc - 1) {
+            cwrites(" ");
+        }
+    }
+
+    cwrites("\n");
+
     return 0;
 }
 
@@ -340,6 +395,16 @@ INTERNAL_COMMAND(int_cmd_getcwd)
 
 INTERNAL_COMMAND(int_cmd_cd)
 {
+    if(argc < 2) {
+        cwrites("Path is required!\n");
+        return -1;
+    }
+
+    int32_t chdir_res = fchdir(argv[1]);
+    if(chdir_res != E_SUCCESS) {
+        sh_printf("Failed to change directories: %d\n", chdir_res);
+    }
+
     return 0;
 }
 
