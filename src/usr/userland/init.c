@@ -194,6 +194,8 @@ static proc_t spawn_table_2[] = {
 	PROCENT(test_vfs, UserPrio, "V", "vfs_test"),
 #endif
 
+#endif // #ifndef WTSH_SHELL
+
 	// a dummy entry to use as a sentinel
 	// PROCENT( 0, 0, 0, 0 )
 	{ 0 }

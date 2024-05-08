@@ -3,6 +3,8 @@
 #include "usr/users.h"
 #include "usr/ulib.h"
 
+#define ARRAY_LEN(array) (sizeof((array)) / sizeof(*(array)))
+
 // Compile Time Settings
 #define WTSH_HIST_SIZE (20)
 #define LINE_BUFFER_SIZE (80) // 80 cols NOT null terminated
@@ -14,6 +16,7 @@ INTERNAL_COMMAND(int_cmd_echo);
 INTERNAL_COMMAND(int_cmd_exit);
 INTERNAL_COMMAND(int_cmd_shutdown);
 INTERNAL_COMMAND(int_cmd_reboot);
+INTERNAL_COMMAND(int_cmd_ls);
 
 typedef struct command_entry
 {
@@ -28,7 +31,9 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("echo", int_cmd_echo, 0),
     COMMAND_ENTRY("exit", int_cmd_exit, 0),
     COMMAND_ENTRY("shutdown", int_cmd_shutdown, 0),
-    COMMAND_ENTRY("reboot", int_cmd_reboot, 0)
+    COMMAND_ENTRY("reboot", int_cmd_reboot, 0),
+    COMMAND_ENTRY("ls", int_cmd_ls, 0),
+    {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
 
 typedef struct wtsh_state
@@ -72,12 +77,17 @@ USERMAIN(wtsh_main)
             cwritech('\n');
 
             // todo: do the thing
-            for (uint8_t i = 0; i < sizeof(g_commands); i++) {
+            for (uint8_t i = 0; i < ARRAY_LEN(g_commands); i++) {
                 command_entry_t cmd = g_commands[i];
 
                 if (strcmp(cmd.name, line_buffer) == 0) {
-                    int32_t pid = spawn(cmd.entrypoint, -1, NULL);
-                    waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
+                    if(cmd.is_subprocess) {
+                        int32_t pid = spawn(cmd.entrypoint, -1, NULL);
+                        waitpid(pid, NULL); // TODO: keep track of status? expose as variable or output it after?
+                    }
+                    else {
+                        cmd.entrypoint(0, NULL);
+                    }
                     break;
                 }
             }
