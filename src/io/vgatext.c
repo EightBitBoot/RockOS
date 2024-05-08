@@ -416,6 +416,9 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
                     _vga_set_mode(1);
                     break;
                 case 1:
+                    _vga_set_mode(2);
+                    break;
+                case 2:
                     _vga_set_mode(0);
                     break;
             }
@@ -431,7 +434,10 @@ void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
             draw_x();
             break;
         case 0x5c: // \: Draw Gradient
-            draw_gradient();
+            draw_test_pattern();
+            break;
+        case 0x08: // Backspace: Draw Rick Astley
+            draw_rick();
             break;
     }
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;

@@ -91,6 +91,22 @@ void _vga_clear_screen(void);
 
 void draw_x(void);
 
-void draw_gradient(void);
+void draw_test_pattern(void);
+
+void draw_rick(void);
+
+extern unsigned char g_80x25_text[61];
+
+extern unsigned char g_640x480x16[61];
+
+extern unsigned char g_320x200x256[61];
+
+extern unsigned char g_8x16_font[4096];
+
+extern uint8_t g_rick[57600];
+
+extern uint8_t backup_color_palette[768];
+
+extern uint8_t g_256_color_palette[768];
 
 #endif

@@ -17,7 +17,7 @@
 OS_C_SRC = clock.c kernel.c kmem.c procs.c queues.c sched.c sio.c stacks.c \
 	   syscalls.c vgatext.c vga.c
 OS_C_OBJ = clock.o kernel.o kmem.o procs.o queues.o sched.o sio.o stacks.o \
-	   syscalls.o vgatext.o vga.o
+	   syscalls.o vgatext.o vga.o vgaconst.o
 
 OS_S_SRC =
 OS_S_OBJ =
@@ -325,4 +325,5 @@ users.o: userland/main5.c userland/userP.c userland/userQ.c userland/userR.c
 users.o: userland/userS.c userland/main6.c userland/init.c userland/idle.c
 users.o: userland/main7.c
 ulibs.o: syscalls.h common.h params.h kdefs.h cio.h support.h lib.h queues.h
-vgatext.o: vgatext.h cio.h
+vgatext.o: vgatext.h cio.h vga.h common.h
+vgaconst.o: vga.h
