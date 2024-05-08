@@ -1,3 +1,30 @@
+/*
+** File:    vgatext.h
+**
+** Author:  Seth Teichman
+**
+** Contributor: 
+**
+** Description: VGA Text Attribute routines
+**
+**  This module implements an expanded set of output routines
+**  for the console screen on the machines in the DSL.
+**
+** Naming conventions:
+**
+**  System Callable functions have names beginning with the
+**  characters "__vga_".  Kernel functions have names beginning
+**  with "_". Userspace callable functions have names without a 
+**  preceding underscore.
+**
+**  Major functions are:
+**  Get/Set Color
+**  Clear Screen
+**  Get/Set Text Blink xor 16-color Backgrounds
+**  ANSI Color Code Parsing for use in printf Implementations
+**
+*/
+
 #ifndef VGATEXT_H
 #define VGATEXT_H
 // Utility Attributes
@@ -50,7 +77,7 @@ unsigned int __vga_text_get_blink_enabled(void);
 void __vga_text_set_blink_enabled(unsigned int blink_enabled);
 
 // Initialization Function
-void __vga_text_init(void);
+void _vga_text_init(void);
 // Test Function
-void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val );
+void _vga_text_color_test( unsigned int kb_data, unsigned int kb_val );
 #endif

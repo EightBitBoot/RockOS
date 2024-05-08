@@ -1,3 +1,24 @@
+/*
+** File:    vga.c
+**
+** Author:  Seth Teichman
+**
+** Contributor: 
+**
+** Description: VGA routines
+**
+**  This module implements a simple set of output routines
+**  for the console screen on the machines in the DSL.
+**  Refer to the header file comments for complete details.
+**
+** Naming conventions:
+**
+**  System Callable functions have names beginning with the
+**  characters "__vga_".  Internal and Kernel functions have names beginning
+**  with "_". Internal-only functions are static.
+**
+*/
+
 #include "vga.h"
 #include "libc/lib.h"
 #include "usr/ulib.h"

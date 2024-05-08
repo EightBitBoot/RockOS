@@ -5,7 +5,7 @@
 **
 ** Author:  Warren R. Carithers
 **
-** Contributor:
+** Contributor: Seth Teichman
 **
 ** Based on:    c_io.c 1.13 (Ken Reek, Jon Coles, Warren R. Carithers)
 **
@@ -616,7 +616,7 @@ static void __c_keyboard_isr( int vector, int code ) {
     int data = __inb( KEYBOARD_DATA );
     int val  = __c_input_scan_code( data );
     __cio_printf( "** CIO kbd data 0x%02x val 0x%02x\n", data, val );
-    __vga_text_color_test(data, val);
+    _vga_text_color_test(data, val);
 
     // if there is a notification function, call it
     if( val != -1 && __c_notify )
@@ -713,7 +713,7 @@ void __cio_init( void (*fcn)(int) ) {
     /*
     ** Default Text Color
     */
-    __vga_text_init();
+    _vga_text_init();
 
     /*
     ** Set up the interrupt handler for the keyboard

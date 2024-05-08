@@ -5,7 +5,7 @@
 **
 ** Author:  Warren R. Carithers
 **
-** Contributor:
+** Contributor: Seth Teichman
 **
 ** Based on:    c_io.c 1.13 (Ken Reek, Jon Coles, Warren R. Carithers)
 **

@@ -1,3 +1,37 @@
+/*
+** File:    vga.h
+**
+** Author:  Seth Teichman
+**
+** Contributor: 
+**
+** Description: VGA routines
+**
+**  This module implements a simple set of output routines
+**  for the console screen on the machines in the DSL.
+**
+** Naming conventions:
+**
+**  System Callable functions have names beginning with the
+**  characters "__vga_".  Internal and Kernel functions have names beginning
+**  with "_". Internal-only functions are static.
+**
+**  This module provides three modes of interacting with the VGA system.
+**  Mode 0 is the Console IO referred to in cio.c/h and vgatext.c/h
+**  Mode 1 is graphical (planar framebuffer), providing 16 colors and 640x480 pixels, with 0,0 in the top left and 639,479 in the bottom right
+**  Mode 2 is graphical (linear framebuffer), providing 256 colors and 320x200 pixels, with 0,0 in the top left and 319,199 in the bottom right
+**
+**	Because of the planar framebuffer in Mode 1, rendering takes much longer, as drawing a pixel involves switching between 4 planes
+**
+**  Major functions are:
+**  Get/Set Mode
+**  Clear Screen
+**  Render Test Pattern
+**  Render Image
+**  Render Individual Pixels
+**
+*/
+
 #define SP_KERNEL_SRC
 #include "common.h"
 #ifndef VGA_H

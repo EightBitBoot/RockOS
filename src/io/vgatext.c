@@ -1,3 +1,25 @@
+/*
+** File:    vgatext.c
+**
+** Author:  Seth Teichman
+**
+** Contributor: 
+**
+** Description: VGA Text Attribute routines
+**
+**  This module implements an expanded set of output routines
+**  for the console screen on the machines in the DSL.
+**  Refer to the header file comments for complete details.
+**
+** Naming conventions:
+**
+**  System Callable functions have names beginning with the
+**  characters "__vga_".  Kernel functions have names beginning
+**  with "_". Userspace callable functions have names without a 
+**  preceding underscore.
+**
+*/
+
 #include "vga.h"
 #include "vgatext.h"
 #include "cio.h"
@@ -247,13 +269,13 @@ void __vga_text_set_blink_enabled(unsigned int blink_enabled) {
     }
 }
 
-void __vga_text_init( void ) {
+void _vga_text_init( void ) {
     // Set to Default Color Byte to finish Initialization
     active_color = VGA_TEXT_DEFAULT_COLOR_BYTE;
     __vga_text_set_blink_enabled(0);
 }
 
-void __vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
+void _vga_text_color_test( unsigned int kb_data, unsigned int kb_val ) {
     char* color_name;
     unsigned char state[VGA_NUM_REGS];
     uint8_t blink = __vga_text_get_blink_enabled();
