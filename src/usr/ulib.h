@@ -248,7 +248,7 @@ void vgadrawimage( uint16_t width, uint8_t height, uint16_t x_offset, uint8_t y_
 ** vgawritepixel - write an individual Pixel in VGA Graphics Modes
 **
 ** usage:   vgawritepixel( x, y, color )
-** 
+**
 ** @returns void
 */
 void vgawritepixel( uint16_t x, uint16_t y, uint8_t color );
@@ -260,26 +260,141 @@ void ciosetcursorpos(unsigned int x, unsigned int y);
 unsigned int ciogetspecialdown(void);
 
 
+/**
+ * @brief Open a file for i/o operations
+ *
+ * @param path the path of the file to be opened
+ * @param mode the operating mode of the file (O_READ, O_WRITE, O_RDWR)
+ * @param flags any additional driver-specific options for the operation
+ *
+ * @return fd_t a file descriptor representing the newly opened file or an error code
+ */
 fd_t fopen(char *path, uint32_t mode, uint32_t flags);
 
+/**
+ * @brief Close an open file and free its associated resources
+ *
+ * @param fd the file descriptor representing the file to close
+ *
+ * @return int32_t An error code reporting any error that occurred
+ */
 int32_t fclose(fd_t fd);
 
+/**
+ * @brief Read data from an open file
+ *
+ * The file must have been opened for reading (O_READ, O_RDWR).
+ *
+ * @param fd the file descriptor representing the file to read from
+ * @param buf the buffer to read into (must be >= num_bytes in size)
+ * @param num_bytes the number of bytes to read from the file
+ * @param flags any additional driver-specific options for the operation
+ * @param status an optional pointer to the location to store the error code generated (if any)
+ *
+ * @return uint32_t the number of bytes read from the file / written into buffer
+ */
 uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
 
+/**
+ * @brief Write data to an open file
+ *
+ * The file must have been opened for writing (O_WRITE, O_RDWR).
+ *
+ * @param fd the file descriptor representing the file to write to
+ * @param buf the buffer to write from (must be >= num_bytes in size)
+ * @param num_bytes the number of bytes to write to the file
+ * @param flags any additional driver-specific options for the operation
+ * @param status an optional pointer to the location to store the error code generated (if any)
+ *
+ * @return uint32_t the number of bytes written to the file / read from buffer
+ */
 uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
 
+/**
+ * @brief Read the contents of a directory (child names and types)
+ *
+ * If buffer is NULL, the number of adinfs_dent_t's that would be written is returned.
+ * No other side effects occur in this case.
+ *
+ * @param fd the file descriptor representing the directory to query
+ * @param buffer a buffer to write the resulting adinfs_dent_t's to
+ * @param count the number of adinfs_dent_t's buffer is capable of storing
+ * @param flags any additional driver-specific options for the operation
+ * @param status an optional pointer to the location to store the error code generated (if any)
+ *
+ * @return uint32_t the number of adinfs_dent_t's read from the directory / written to buffer
+ */
 uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status, uint32_t flags);
 
+/**
+ * @brief Create a file at the specified path (without opening it)
+ *
+ * Not implemented due to time.
+ *
+ * @param path the path of the file to be created
+ * @param type the type of file to create
+ * @param flags any additional driver-specific options for the operation
+ *
+ * @return int32_t an error code representing any error that occurred during the operation
+ */
 int32_t fcreate(char *path, uint32_t type, uint32_t flags);
 
+/**
+ * @brief Delete a file at the specified path
+ *
+ * This operation will fail if any process has the file open (for reading or
+ * writing) or is currently within it (the process's cwd is set to the file).
+ *
+ * Not implemented due to time.
+ *
+ * @param path the path of the file to be deleted
+ * @param flags any additional driver-specific options for the operation
+ *
+ * @return int32_t an error code representing the first error that occurred during the operation
+ */
 int32_t fdelete(char *path, uint32_t flags);
 
+/**
+ * @brief Perform a backing driver specific operation on an open file or the inode it represents
+ *
+ * @param fd the file descriptor representing the file to modify
+ * @param action the driver-specific action to perform
+ * @param data any data the action may consume or return
+ *
+ * @return int32_t an error code representing the first error to occur during the action
+ */
 int32_t fioctl(fd_t fd, uint32_t action, void *data);
 
+/**
+ * @brief Update an open file's r/w head and report the new location
+ *
+ * @param fd the file descriptor representing the file to update
+ * @param offset the offset from the location specified by whence to move
+ * @param whence the base location to add offset to when calculating the final position
+                 (SEEK_SET, SEEK_CURR, SEEK_END)
+ * @param status an optional pointer to store the location of the error code associated with the action
+ *
+ * @return uint32_t the new r/w head position of the file (or 0 on error)
+ */
 uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
 
+/**
+ * @brief Change the current working directory of the file
+ *
+ * @param path the path of the new directory to set the process's cwd to
+ *
+ * @return int32_t an error code representing the first error that occured during the operation
+ */
 int32_t fchdir(char *path);
 
+/**
+ * @brief Get the path of the calling process's current working directory as a string
+ *
+ * @param buffer the buffer to write the path to
+ * @param buffer_len the size (in bytes) of buffer
+ *
+ * @return uint32_t the number of bytes written to buffer
+ */
 uint32_t fgetcwd(char *buffer, uint32_t buffer_len);
 
 /**

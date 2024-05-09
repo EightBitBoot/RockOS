@@ -817,7 +817,7 @@ SYSIMPL(vgasetmode)
 
 /**
 ** _sys_vgaclear - clear the VGA Screen
-** 
+**
 ** implements:
 **		void vgatextclear( void );
 */
@@ -828,7 +828,7 @@ SYSIMPL(vgaclearscreen)
 
 /**
 ** _sys_vgatest - draw a test pattern for the current graphics mode on the VGA Screen
-** 
+**
 ** implements:
 **		void vgatest( void );
 */
@@ -890,9 +890,18 @@ SYSIMPL(ciogetspecialdown)
 
 // ----------------------------- VFS Calls -----------------------------
 
+/**
+** Check for common file descriptor invalidities
+*/
 #define IS_BAD_FD(fd) \
 	((fd) < 0 || (fd) >= VFS_MAX_OPEN_FILES || _current->open_files[(fd)] == NULL)
 
+/**
+ * @brief Translate a kernel-internal status to a syscall error code.
+ *
+ * @param status the status to translate
+ * @return int32_t the user-facing error code
+ */
 static int32_t __status_to_sys_ret(status_t status)
 {
 	switch(status) {
@@ -925,13 +934,21 @@ static int32_t __status_to_sys_ret(status_t status)
 	return E_FAILURE;
 }
 
-// fd_t fopen(char *path, uint32_t mode, uint32_t flags);
+/**
+** _sys_fopen - open a file, directory, or device for i/o
+**
+** implements:
+**      fd_t fopen(char *path, uint32_t mode, uint32_t flags)
+**
+** returns:
+**		a file descriptor to be passed to other filesystem syscalls
+**      (fread, fwrite, etc.) or a negative error value
+*/
 SYSIMPL(fopen)
 {
 	char *path     = (char *) ARG(_current, 1);
 	uint32_t mode  = ARG(_current, 2);
 	uint32_t flags = ARG(_current, 3);
-	(void) flags; // TODO(Adin): Add flags to test or remove this parameter (in ulib.h too)
 
 	if(!path || !(mode & O_READ || mode & O_WRITE)) {
 		RET(_current) = E_BAD_PARAM;
@@ -953,8 +970,8 @@ SYSIMPL(fopen)
 	}
 
 	/*
-	 * If target file
-	 * a) isn't a device _AND_
+	 * If (a && (b || c))
+	 * a) target file isn't a device _AND_
 	 * b) this is a read trying to steal from a writer _OR_
 	 * c) this is a write trying to steal from either a reader or a writer
 	*/
@@ -966,17 +983,22 @@ SYSIMPL(fopen)
 		return;
 	}
 
+	// Get the next available fd for the current process's open
+	// file table
 	fd_t fd = _pcb_get_next_fd(_current);
 	if(fd < 0) {
 		RET(_current) = E_MAX_FILES_OPEN;
 		return;
 	}
 
+	// Allocate (and initialize) the file struct being opened
 	kfile_t *file = _vfs_allocate_file();
 	file->kf_inode = target;
 	file->kf_ops = target->i_file_ops;
 	file->kf_mode = mode;
 
+	// Actually call into the driver that provides the target inode
+	// being opened
 	status_t open_status = file->kf_ops->open(target, file, flags);
 	if(open_status) {
 		_vfs_free_file(file);
@@ -984,6 +1006,8 @@ SYSIMPL(fopen)
 		return;
 	}
 
+	// Take a read or write lock out on the file (unless the user
+	// is opening a device)
 	if(target->i_type != S_TYPE_DEV) {
 		if(mode & O_READ) {
 			target->i_nr_readers++;
@@ -994,12 +1018,22 @@ SYSIMPL(fopen)
 		}
 	}
 
+	// Store a pointer to the file in the current pcb's open
+	// file table
 	_current->open_files[fd] = file;
 
 	RET(_current) = fd;
 }
 
-// int32_t fclose(fd_t fd);
+/**
+** _sys_fclose - close an open file and free its associated resources
+**
+** implements:
+**      int32_t fclose(fd_t fd);
+**
+** returns:
+**      an error code indidcating the cause of any failures (currently only E_SUCCESS)
+*/
 SYSIMPL(fclose)
 {
 	fd_t fd = ARG(_current, 1);
@@ -1011,6 +1045,9 @@ SYSIMPL(fclose)
 
 	// TODO(Adin): Reference counting
 
+	// Grab the file, and if the backing driver supports it, call
+	// the close operation: allowing the driver to perform any cleanup
+	// it likes
 	kfile_t *file = _current->open_files[fd];
 	if(file->kf_ops && file->kf_ops->close) {
 		// TODO(Adin): If this fails, how should it be reported to
@@ -1018,6 +1055,7 @@ SYSIMPL(fclose)
 		file->kf_ops->close(file);
 	}
 
+	// Free any read or write locks the file had on the inode
 	if(file->kf_inode->i_type != S_TYPE_DEV) {
 		if(file->kf_mode & O_READ) {
 			file->kf_inode->i_nr_readers--;
@@ -1034,13 +1072,21 @@ SYSIMPL(fclose)
 	// 	fd, file->kf_inode->i_nr_readers, file->kf_inode->i_has_writer
 	// );
 
+	// Free the resources associated with the open file
 	_current->open_files[fd] = NULL;
 	_vfs_free_file(file);
 
 	RET(_current) = E_SUCCESS;
 }
 
-// uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags int32_t *status);
+/** _sys_fread - read data from an open file
+**
+** implements:
+**      uint32_t fread(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags int32_t *status);
+**
+** returns:
+**		the number of bytes read and an optional error code in status
+*/
 SYSIMPL(fread)
 {
 	fd_t fd            = ARG(_current, 1);
@@ -1049,6 +1095,7 @@ SYSIMPL(fread)
 	uint32_t flags     = ARG(_current, 4);
 	int32_t *status    = (int32_t *) ARG(_current, 5);
 
+	// Validate parameters
 	if(IS_BAD_FD(fd) || !buf) {
 		RET(_current) = 0;
 		if(status) {
@@ -1057,6 +1104,7 @@ SYSIMPL(fread)
 		return;
 	}
 
+	// Grab the file and make sure it's open with read capabilities
 	kfile_t *target = _current->open_files[fd];
 	if(!(target->kf_mode & O_READ)) {
 		RET(_current) = 0;
@@ -1066,6 +1114,7 @@ SYSIMPL(fread)
 		return;
 	}
 
+	// Ensure the backing driver supports reading from this file
 	if(!target->kf_ops || !target->kf_ops->read) {
 		RET(_current) = 0;
 		if(status) {
@@ -1074,11 +1123,16 @@ SYSIMPL(fread)
 		return;
 	}
 
+	// Call the backing driver's read function to get the data from the file backing
+	// NOTE(Adin): device files ignore offsets so 0 is passed (they are mostly proxies
+	//		       for other functions)
 	uint32_t num_read = 0;
 	uint32_t offset = (target->kf_inode->i_type == S_TYPE_DEV ? 0 : target->kf_rwhead);
 
 	status_t read_status = target->kf_ops->read(target, buf, num_bytes, offset, flags, &num_read);
 
+	// Update the file's (stream's) read/write head to reflect the data read and
+	// return the relevant results
 	target->kf_rwhead += num_read;
 
 	RET(_current) = num_read;
@@ -1087,7 +1141,14 @@ SYSIMPL(fread)
 	}
 }
 
-// uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
+/** _sys_fwrite - write data to an open file
+**
+** implements:
+**      uint32_t fwrite(fd_t fd, void *buf, uint32_t num_bytes, uint32_t flags, int32_t *status);
+**
+** returns:
+**		the number of bytes written and an optional error code in status
+*/
 SYSIMPL(fwrite)
 {
 	fd_t fd            = ARG(_current, 1);
@@ -1096,6 +1157,7 @@ SYSIMPL(fwrite)
 	uint32_t flags     = ARG(_current, 4);
 	int32_t *status    = (int32_t *) ARG(_current, 5);
 
+	// Validate parameters
 	if(IS_BAD_FD(fd) || !buf) {
 		RET(_current) = 0;
 		if(status) {
@@ -1104,6 +1166,7 @@ SYSIMPL(fwrite)
 		return;
 	}
 
+	// Grab the file and ensure it's opened for writing
 	kfile_t *target = _current->open_files[fd];
 	if(!(target->kf_mode & O_WRITE)) {
 		RET(_current) = 0;
@@ -1113,6 +1176,7 @@ SYSIMPL(fwrite)
 		return;
 	}
 
+	// Ensure the backing driver supports writing to the file
 	if(!target->kf_ops || !target->kf_ops->write) {
 		RET(_current) = 0;
 		if(status) {
@@ -1121,11 +1185,15 @@ SYSIMPL(fwrite)
 		return;
 	}
 
+	// Write the user-supplied data to the open file via the backing driver's
+	// write operation
 	uint32_t num_written = 0;
 	uint32_t offset = (target->kf_inode->i_type == S_TYPE_DEV ? 0 : target->kf_rwhead);
 
 	status_t write_status = target->kf_ops->write(target, buf, num_bytes, offset, flags, &num_written);
 
+	// Update the file's (stream's) read/write head to reflect the data written and
+	// return the relevant results
 	target->kf_rwhead += num_written;
 
 	RET(_current) = num_written;
@@ -1134,7 +1202,14 @@ SYSIMPL(fwrite)
 	}
 }
 
-// uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status);
+/** _sys_flistdir - read the contents of a directory (child names and types)
+**
+** implements:
+**      uint32_t flistdir(fd_t fd, adinfs_dent_t *buffer, uint32_t count, int32_t *status, uint32_t flags);
+**
+** returns:
+**		the number of adinfs_dent_t entries written to buffer and an option error code in status
+*/
 SYSIMPL(flistdir)
 {
 	fd_t fd               = ARG(_current, 1);
@@ -1143,6 +1218,7 @@ SYSIMPL(flistdir)
 	int32_t *status  	  = (int32_t *) ARG(_current, 4);
 	uint32_t flags        = ARG(_current, 5);
 
+	// Validate params
 	if(IS_BAD_FD(fd)) {
 		RET(_current) = 0;
 		if(status) {
@@ -1151,6 +1227,8 @@ SYSIMPL(flistdir)
 		return;
 	}
 
+	// Grab the file and validate is is a directory whose backing driver supports
+	// iteration
 	kfile_t *target = _current->open_files[fd];
 
 	if(!target->kf_ops || !target->kf_ops->iterate_shared || target->kf_inode->i_type != S_TYPE_DIR) {
@@ -1161,6 +1239,7 @@ SYSIMPL(flistdir)
 		return;
 	}
 
+	// Ensure the directory is opened for reading
 	if(!(target->kf_mode & O_READ)) {
 		RET(_current) = 0;
 		if(status) {
@@ -1168,18 +1247,30 @@ SYSIMPL(flistdir)
 		}
 	}
 
+	// Read the directory entries from the backing driver
 	uint32_t num_written = 0;
-	// This is called every time because there is no guarantee the dentry cache will
-	// have every child of the current inode
+	// NOTE(Adin): This is called every time because there is no
+	//			   guarantee the dentry cache will have every
+	//			   child of the current inode
 	status_t iterate_result = target->kf_ops->iterate_shared(target, buffer, count, &num_written, flags);
 
+	// Return the relevant information and optional error code
 	RET(_current) = num_written;
 	if(status) {
 		*status = __status_to_sys_ret(iterate_result);
 	}
 }
 
-// int32_t fcreate(char *path, uint32_t type, uint32_t flags);
+/** _sys_fcreate - create a new file (or directory) at the specified path
+**
+** implements:
+**      int32_t fcreate(char *path, uint32_t type, uint32_t flags);
+**
+** NOTE(Adin): Not implemented due to time
+**
+** returns:
+**		an error code indicating any errors creating the file or E_SUCCESS
+*/
 SYSIMPL(fcreate)
 {
 #if 0
@@ -1190,7 +1281,8 @@ SYSIMPL(fcreate)
 	char *split_path = _km_slice_alloc();
 	__memcpy(split_path, path, __strlen(path));
 
-	// Quick and dirty last index of
+	// Quick and dirty last index of for dirname/basename
+	// splitting
 	int index = __strlen(split_path) - 1;
 	while(index >= 0 && split_path[index] != '/') {
 		index--;
@@ -1203,41 +1295,72 @@ SYSIMPL(fcreate)
 
 	inode_t *parent = NULL;
 	status_t namey_result = namey(path, &parent);
-#endif
-
+#else
 	RET(_current) = E_NOT_SUPPORTED;
+#endif
 }
 
-// int32_t fdelete(char *path, uint32_t flags);
+/** _sys_fdelete - delete a file (or directory) at the specified path only if
+**				   no other process has it open or is currently in it (cwd
+**				   = target)
+**
+** implements:
+**      int32_t fdelete(char *path, uint32_t flags);
+**
+** NOTE(Adin): Not implemented due to time
+**
+** returns:
+**		an error code indicating any errors deleting the file or E_SUCCESS
+*/
 SYSIMPL(fdelete)
 {
 	RET(_current) = E_NOT_SUPPORTED;
 }
 
-// int32_t fioctl(fd_t fd, uint32_t action, void *data);
+/** _sys_fioctl - perform a driver-specific action on a file or the inode it
+**				  represents
+**
+** implements:
+**      int32_t fioctl(fd_t fd, uint32_t action, void *data);
+**
+** returns:
+**		an error code indicating any errors with the action or E_SUCCESS
+*/
 SYSIMPL(fioctl)
 {
 	fd_t fd         = ARG(_current, 1);
 	uint32_t action = ARG(_current, 2);
 	void *data      = (void *) ARG(_current, 3);
 
+	// Validate parameters
 	if(IS_BAD_FD(fd)) {
 		RET(_current) = E_BAD_PARAM;
 		return;
 	}
 
+	// Ensure the backing driver supports fioctl action(s)
 	kfile_t *target = _current->open_files[fd];
 	if(!target->kf_ops || !target->kf_ops->ioctl) {
 		RET(_current) = E_NOT_SUPPORTED;
 		return;
 	}
 
+	// Call into the driver to perform the action specified in `action`
 	status_t ioctl_status = target->kf_ops->ioctl(target, action, data);
 
+	// Return the result to the user
 	RET(_current) = __status_to_sys_ret(ioctl_status);
 }
 
-// uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
+/** _sys_fseek - update the read/write head of a file and report its new location
+**				 to the user
+**
+** implements:
+**      uint32_t fseek(fd_t fd, int32_t offset, uint32_t whence, int32_t *status);
+**
+** returns:
+**		the new position of the read/write head and an optional error code in status
+*/
 SYSIMPL(fseek)
 {
 	fd_t fd         = ARG(_current, 1);
@@ -1245,6 +1368,7 @@ SYSIMPL(fseek)
 	uint32_t whence = ARG(_current, 3);
 	int32_t *status = (int32_t *) ARG(_current, 4);
 
+	// Parameter validation
 	if(IS_BAD_FD(fd)) {
 		if(status) {
 			*status = E_BAD_PARAM;
@@ -1253,6 +1377,8 @@ SYSIMPL(fseek)
 		return;
 	}
 
+	// Grab the file, ensure the required backing driver operation is supported
+	// and ensure the file sin't a device (which don't use offsets or r/w heads)
 	kfile_t *target = _current->open_files[fd];
 
 	if(target->kf_inode->i_type == S_TYPE_DEV ||
@@ -1266,8 +1392,10 @@ SYSIMPL(fseek)
 		return;
 	}
 
+	// Get the length of the file's data from the backing driver
 	uint32_t file_len = target->kf_ops->get_length(target);
 
+	// Determine the values to be used when calculating the new r/w head
 	uint32_t new_base = 0;
 	switch(whence) {
 		case SEEK_CURR:
@@ -1283,6 +1411,7 @@ SYSIMPL(fseek)
 			break;
 
 		default:
+		 	// Invalid whence value
 			RET(_current) = 0;
 			if(status) {
 				*status = E_BAD_PARAM;
@@ -1298,6 +1427,7 @@ SYSIMPL(fseek)
 	// 	target->kf_rwhead, offset, new_base, new_rwhead
 	// );
 
+	// Ensure the resulting r/w head would be in the valid range of values
 	if((offset < 0 && new_rwhead > new_base) || // Underflow
 	   (offset > 0 && new_rwhead < new_base) || // Overflow
 	   (new_rwhead > file_len))					// rw head > file length
@@ -1309,6 +1439,8 @@ SYSIMPL(fseek)
 		return;
 	}
 
+	// Update the r/w head in the actual kfile_t struct and return any
+	// relevant information to the user
 	target->kf_rwhead = new_rwhead;
 	RET(_current) = new_rwhead;
 	if(status) {
@@ -1316,17 +1448,27 @@ SYSIMPL(fseek)
 	}
 }
 
-
-// int32_t chdir(char *path)
+/** _sys_fchdir - change the working directory of the calling process to the one
+**				  specified
+**
+** implements:
+**      int32_t chdir(char *path);
+**
+** returns:
+**		An error code corresponding to any errors encountered with the operation
+*/
 SYSIMPL(fchdir)
 {
 	char *path = (char *) ARG(_current, 1);
 
+	// Parameter validation
 	if(!path) {
 		RET(_current) = E_BAD_PARAM;
 		return;
 	}
 
+	// Resolve the path specified by the user to a direntry
+	// (if it exists within the system)
 	dirent_t *new_cwd = NULL;
 	// __cio_printf("fchdir path %s\n", path);
 	status_t resolve_status = resolve_path(path, &new_cwd);
@@ -1335,6 +1477,7 @@ SYSIMPL(fchdir)
 		return;
 	}
 
+	// Return the relevant error code for the result of the operation
 	if(!new_cwd) {
 		RET(_current) = E_FAILURE;
 		return;
@@ -1344,17 +1487,28 @@ SYSIMPL(fchdir)
 	RET(_current) = E_SUCCESS;
 }
 
-// uint32_t getcwd(char *buffer, uint32_t buffer_len)
+/** _sys_fgetcwd - get the working directory of the calling process as an
+**				   absolute path
+**
+** implements:
+**      uint32_t getcwd(char *buffer, uint32_t buffer_len);
+**
+** returns:
+**		The number of bytes written to buffer, and the working directory
+**      path in buffer
+*/
 SYSIMPL(fgetcwd)
 {
 	char *buffer = (char *) ARG(_current, 1);
 	uint32_t buffer_len = ARG(_current, 2);
 
+	// Parameter validation
 	if(!buffer) {
 		RET(_current) = 0;
 		return;
 	}
 
+	// Generate the path and place it in buffer
 	__memclr(buffer, buffer_len);
 	_vfs_dirent_to_pathname(_current->cwd, buffer);
 
