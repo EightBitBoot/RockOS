@@ -2,6 +2,8 @@
 #include "common.h"
 #include "usr/users.h"
 #include "usr/ulib.h"
+#include "io/vga.h"
+#include "io/vgatext.h"
 
 #define ARRAY_LEN(array) (sizeof((array)) / sizeof(*(array)))
 
@@ -18,6 +20,7 @@ INTERNAL_COMMAND(int_cmd_exit);
 INTERNAL_COMMAND(int_cmd_shutdown);
 INTERNAL_COMMAND(int_cmd_reboot);
 INTERNAL_COMMAND(int_cmd_ls);
+INTERNAL_COMMAND(int_cmd_vgademo);
 
 #define COMMAND_STR_SIZE (128)
 typedef struct command_entry
@@ -37,6 +40,7 @@ command_entry_t g_commands[] = {
     COMMAND_ENTRY("shutdown", "shutdown the system", int_cmd_shutdown, 0),
     COMMAND_ENTRY("reboot", "reboot the system", int_cmd_reboot, 0),
     COMMAND_ENTRY("ls", "list directory contents", int_cmd_ls, 0),
+    COMMAND_ENTRY("vgademo", "demonstrate vga", int_cmd_vgademo, 0),
     // COMMAND_ENTRY("test_vfs", test_vfs, 1),
     {}, // End sentinel (ensures there's always an element in the array for sizing)
 };
@@ -66,6 +70,24 @@ USERMAIN(wtsh_main)
     uint8_t cursor_pos = 0;
 
     init_state(&g_shell_state);
+
+    vgatextclear();
+
+    vgatextsetactivecolor(vga_text_fg(VGA_TEXT_COLOR_ORANGE));
+
+    cwrites(logo);
+
+    vgatextsetactivecolor(vga_text_fg(VGA_TEXT_COLOR_BLACK) | vga_text_bg(VGA_TEXT_COLOR_WHITE));
+
+    cwrites("\n\n");
+
+    cwrites("          Jake, Adin and Seth OS Version 1           \n");
+
+    vgatextsetactivecolor(VGA_TEXT_DEFAULT_COLOR_BYTE);
+
+    cwrites("\n\n_____________________________________________________");
+
+    cwrites("\n\n\n\n\n");
 
     cwrites("wtsh> ");
     while(g_shell_state.is_running) {
@@ -208,5 +230,93 @@ INTERNAL_COMMAND(int_cmd_reboot)
 
 INTERNAL_COMMAND(int_cmd_ls)
 {
+    return 0;
+}
+
+void draw_square(unsigned x, unsigned y, unsigned side, unsigned color) {
+    uint16_t cx=x, cy=y;
+    for (cx = x; cx < x+side; cx++) {
+        vgawritepixel(cx, cy, color);
+    }
+    for (cy = y; cy < y+side; cy++) {
+        vgawritepixel(cx, cy, color+16);
+    }
+    for (cx = x+side; cx > x; cx--) {
+        vgawritepixel(cx, cy, color+32);
+    }
+    for (cy = y+side; cy > y; cy--) {
+        vgawritepixel(cx, cy, color+48);
+    }
+}
+
+INTERNAL_COMMAND(int_cmd_vgademo)
+{
+    int c;
+    // Enter 16 Color Graphics Mode
+    vgasetmode(1);
+
+    // Clear Screen
+    vgaclearscreen();
+
+	// Print Color Tests
+    vgatest();
+
+    sleep(5000);
+
+    vgaclearscreen();
+
+    // Draw some Squares
+    for (c = 0; c < 16; c++) {
+        draw_square((640/2)+(c-8)*25, (480/2)+(c-8)*25, 20, c);
+    }
+
+    sleep(5000);
+
+    // Enter 256 Color Graphics Mode
+    vgasetmode(2);
+
+    // Clear Screen
+    vgaclearscreen();
+
+	// Print Color Tests
+    vgatest();
+
+    sleep(5000);
+
+    vgaclearscreen();
+
+    // Clear Screen Again
+    vgaclearscreen();
+
+    vgadrawimage(320, 180, 0, 10, vga_image_rick);
+
+    sleep(5000);
+
+    vgaclearscreen();
+
+    vgadrawimage(320, 135, 0, 32, vga_image_obiwan);
+
+    sleep(5000);
+
+    vgaclearscreen();
+
+    vgadrawimage(157, 180, 81, 10, vga_image_adin);
+
+    sleep(5000);
+
+    vgaclearscreen();
+
+    vgadrawimage(280, 200, 20, 0, vga_image_coyote);
+
+    sleep(5000);
+
+    // Return to Text Mode
+    vgasetmode(0);
+
+    vgatextclear();
+
+    cwrites("wtsh> ");
+
+	// all done!
     return 0;
 }
