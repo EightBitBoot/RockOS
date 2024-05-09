@@ -445,6 +445,12 @@ void _pcb_zombify( pcb_t *victim )
 	*/
 }
 
+/**
+ * @brief Get the next lowest, available file descriptor for a process
+ *
+ * @param pcb the pcb of the process to get a fd for
+ * @return fd_t the next available fd or -1 if none are
+ */
 fd_t _pcb_get_next_fd(pcb_t *pcb)
 {
 	// TODO(Adin): Check for pcb == NULL and pcb->open_files == NULL;

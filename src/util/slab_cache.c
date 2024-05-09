@@ -1,3 +1,10 @@
+/**
+** @file	slab_cache.c
+**
+** @author	Adin Wistreich-Tannenbaum
+**
+** @brief	Slab-allocated, generalized cache system implementations
+*/
 
 #include "slab_cache.h"
 
@@ -5,21 +12,44 @@
 #include "libc/lib.h"
 #include "mem/kmem.h"
 
+/**
+ * @brief The address mask to translate from an element to the slice it's contained in
+ */
 #define SMALL_SLAB_HEADER_MASK (0xFFFFC00U)
+/**
+ * @brief The address mask to translate from an element to the page it's contained in
+ */
 #define LARGE_SLAB_HEADER_MASK (0xFFFF000U)
 
+/**
+ * @brief Get the header of the slab an element is contained in from a pointer to the element
+ */
 #define ELEMENT_TO_SLAB_HEADER(elem) ((slab_header_t *) (((uint32_t) (elem)) & \
                                  (cache->flags & SC_INIT_LARGE_SLABS ? LARGE_SLAB_HEADER_MASK : SMALL_SLAB_HEADER_MASK)))
 
+/**
+ * @brief Prettifying macro to cast a pointer to a void** linked list item
+ */
 #define VOID_PTR_TO_LIST_ITEM(ptr) ((void **) (ptr))
 
+/**
+ * @brief Get the size of a cache's slabs from its flags
+ */
 #define SLAB_SIZE(cache) ((cache)->flags & SC_INIT_LARGE_SLABS ? (4096U) : (1024U))
 
+
 // NOTE(Adin): This is a relatively costly operation so it shouldn't be
-// done laissez faire
+//             done laissez faire
 // slab_addr + ceil(sizeof(slab_header_t) / elem_size) * elem_size
+
+/**
+ * @brief Get the address of the first element in a slab from the address of the slab
+ */
 #define SLAB_FIRST_ELEM(slab, elem_size) ((slab) + (((sizeof(slab_header_t) + (elem_size) - 1) / (elem_size)) * (elem_size)))
 
+/**
+ * @brief Iterate over every element in a slab
+ */
 #define SLAB_FOR_EACH(cache, slab, var)                            \
     for (                                                          \
         void * var = SLAB_FIRST_ELEM((slab), (cache)->elem_size);  \
@@ -27,11 +57,21 @@
         var += (cache)->elem_size                                  \
     )
 
+/**
+ * @brief The header of each slab
+ */
 typedef struct slab_header
 {
     struct slab_header *next_slab; // For the all slabs list
 } slab_header_t;
 
+/**
+ * @brief Get a new, appropriately sized slab for a cache
+ *
+ * @param cache the cache to get a slab for
+ *
+ * @return void* the new slab
+ */
 static inline void *__get_slab(slab_cache_t *cache)
 {
     void *new_slab = NULL;
@@ -54,6 +94,13 @@ static inline void *__get_slab(slab_cache_t *cache)
 
 // TODO(Adin): Should the _km_{page|slice}_free functions return errors
 //             and if so, should the be passed up the stack here?
+
+/**
+ * @brief Free a cache's slab
+ *
+ * @param cache the owning cache of the slab
+ * @param slab the slab to free
+ */
 static inline void __free_slab(slab_cache_t *cache, void *slab)
 {
     if (cache->flags & SC_INIT_LARGE_SLABS) {
@@ -64,6 +111,17 @@ static inline void __free_slab(slab_cache_t *cache, void *slab)
     }
 }
 
+/**
+ * @brief Initialize a new slab cache
+ *
+ * Once initialized, a cache's parameters are fixed and must not be modified.
+ *
+ * @param cache the cache to initialize
+ * @param element_size the size of each element in the cache
+ * @param flags any options regarding the initialization or behavior of the cache
+ *
+ * @return status_t an error code representing the first error that occurred in the operation
+ */
 status_t slab_init(slab_cache_t *cache, uint32_t element_size, uint32_t flags)
 {
     // Slab sizes are both even so a right shift is /= 2
@@ -88,6 +146,16 @@ status_t slab_init(slab_cache_t *cache, uint32_t element_size, uint32_t flags)
     return E_SUCCESS;
 }
 
+/**
+ * @brief Deinitialize a cache and free all of its resources
+ *
+ * After deinit is called on a cache, any references to elements it formerly
+ * managed are no longer valid.
+ *
+ * @param cache the cache to deinit
+ *
+ * @return status_t the error status of the operation
+ */
 status_t slab_deinit(slab_cache_t *cache)
 {
     for(void *curr = cache->all_slabs; curr != NULL; curr = *VOID_PTR_TO_LIST_ITEM(curr)) {
@@ -97,6 +165,14 @@ status_t slab_deinit(slab_cache_t *cache)
     return E_SUCCESS;
 }
 
+/**
+ * @brief Allocate a new element in the cache
+ *
+ * @param cache the cache to allocate from
+ * @param flags any additional options for the operation
+
+ * @return void* the newly allocated element
+ */
 void *slab_alloc(slab_cache_t *cache, uint32_t flags)
 {
     if(!cache->free_elements) {
@@ -127,6 +203,14 @@ void *slab_alloc(slab_cache_t *cache, uint32_t flags)
     return new_element;
 }
 
+/**
+ * @brief Free an element belonging to the cache
+ *
+ * @param cache the cache that owns/manages the element
+ * @param element the element to be freed
+ *
+ * @return status_t the error status of the operation
+ */
 status_t slab_free(slab_cache_t *cache, void *element)
 {
     if(!cache->free_elements) {

@@ -1,9 +1,35 @@
+/**
+** @file	kstring.c
+**
+** @author	Adin Wistreich-Tannenbaum
+**
+** @brief	Non-null-terminated string library implementations
+*/
 
 #include "kstring.h"
 
+/**
+ * Get the string index of a pointer within the bounds of a kstring_t
+ */
 #define KSTR_PTR_IDX(s, p) ((p) - (s)->str)
+/**
+ * Check whether a pointer is within the bounds of a kstring_t
+ */
 #define KSTR_PTR_INBNDS(s, p) (KSTR_PTR_IDX(s, p) < (s)->len)
 
+/**
+ * @brief Compare two kstring_t's
+ *
+ * This behaves identically to the normal strcmp except it
+ * operates on kstring_t's.
+ *
+ * @param left the first string to compare
+ * @param right the second string to compare
+ *
+ * @return int negative value if the left < right,
+ *         positive if left > right,
+ *         and 0 if they're equal
+ */
 int kstr_strcmp(kstr_t *left, kstr_t *right)
 {
     if(left->len == 0 && right->len == 0) {
@@ -13,6 +39,7 @@ int kstr_strcmp(kstr_t *left, kstr_t *right)
     char *p_left = left->str;
     char *p_right = right->str;
 
+    // Find the first differing character between the strings
     while(KSTR_PTR_INBNDS(left, p_left) &&
           KSTR_PTR_INBNDS(right, p_right) &&
           (*p_left == *p_right))
@@ -47,6 +74,18 @@ int kstr_strcmp(kstr_t *left, kstr_t *right)
     return (*p_left) - (*p_right);
 }
 
+/**
+ * @brief Tokenize a kstring_t
+ *
+ * Sequential calls (with the same context) return adjacent tokens in
+ * the string, seperated by delim.
+ *
+ * @param str the string to tokenize
+ * @param delim the delimiter character seperating adjacent tokens
+ * @param context the private context of a single string being tokenized
+ *
+ * @return kstr_t the nth token of str, delimited by delim
+ */
 kstr_t kstr_strtok(kstr_t *str, char delim, kstr_strtok_context_t *context)
 {
     char *curr_start;

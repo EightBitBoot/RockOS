@@ -1,3 +1,10 @@
+/**
+** @file	bogus_data.c
+**
+** @author	Adin Wistreich-Tannenbaum
+**
+** @brief	The hardcoded backing data for testfs (implementation)
+*/
 
 #include "bogus_data.h"
 
@@ -22,6 +29,7 @@
  *
 */
 
+// Nodes
 bogus_node_t bogus_root_node;
 
 static bogus_node_t bogus_etc_node;
@@ -33,6 +41,7 @@ static bogus_node_t bogus_libgdi_node;
 static bogus_node_t bogus_bin_node;
 static bogus_node_t bogus_chattr_node;
 
+// The list of all nodes (used for fs initialization)
 bogus_node_t *bogus_all_nodes[BOGUS_NUM_NODES] = {
     &bogus_root_node,
     &bogus_etc_node,
@@ -46,6 +55,9 @@ bogus_node_t *bogus_all_nodes[BOGUS_NUM_NODES] = {
     &bogus_chattr_node
 };
 
+/**
+ * @brief initialize the testfs backing data
+ */
 void __init_bogus_nodes(void)
 {
     bogus_passwd_node.data = _km_page_alloc(1);
@@ -56,6 +68,9 @@ void __init_bogus_nodes(void)
     bogus_chattr_node.data = _km_page_alloc(1);
 }
 
+/**
+ * @brief deinitialize the testfs backing data and free any associated resources
+ */
 void __deinit_bogus_nodes(void)
 {
     _km_page_free(bogus_passwd_node.data);
@@ -65,6 +80,8 @@ void __deinit_bogus_nodes(void)
 
     _km_page_free(bogus_chattr_node.data);
 }
+
+// --------------------------------- Node Data ----------------------------------
 
 bogus_node_t bogus_root_node = {
     .name = "/",

@@ -38,6 +38,11 @@
 #define	TICKS_PER_MS	1
 
 // Just vfs things
+
+// The maximum number of simultaneous open files per process allowed
 #define VFS_MAX_OPEN_FILES 32 // 128 bytes per open file table (32 * sizeof(kfile_t *))
+// The maximum length of a vfs path component (unused)
+#define VFS_NAME_MAX 255
+
 
 #endif

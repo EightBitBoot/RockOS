@@ -1,4 +1,12 @@
 
+/**
+** @file	testfs.c
+**
+** @author	Adin Wistreich-Tannenbaum
+**
+** @brief	A hardcoded fs driver conforming to the vfs interface (implementation)
+*/
+
 #include "testfs.h"
 
 #include "common.h"
@@ -11,6 +19,7 @@
 
 #include "usr/testfs_usr.h"
 
+// Forward declerations
 status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags);
 status_t testfs_close_file(kfile_t *file);
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read);
@@ -25,16 +34,29 @@ dirent_t *testfs_mount(fs_type_t *fs_type);
 
 #define INT_MIN(a, b) ((a) < (b) ? (a) : (b))
 
+/**
+ * @brief A pretifiication macro for getting the associated bogus_node_t
+ *        from a testfs kfile
+ */
 #define FILE_TO_BOGUS_NODE(file_ptr) ((bogus_node_t *)(file_ptr)->kf_priv)
 
 // -------------------------------------------------------
 // Quick! It's the OPs!
 
+/**
+ * @brief Testfs's inode operations for file inodes
+ */
 static inode_ops_t testfs_inode_file_ops = {};
+/**
+ * @brief Testfs's inode operations for directory inodes
+ */
 static inode_ops_t testfs_inode_dir_ops = {
     .lookup = testfs_lookup,
 };
 
+/**
+ * @brief Testfs's kfile operations for file kfiles
+ */
 static kfile_ops_t testfs_file_ops = {
     .open = testfs_open,
     .close = testfs_close_file,
@@ -43,16 +65,30 @@ static kfile_ops_t testfs_file_ops = {
     .ioctl = testfs_ioctl,
     .get_length = testfs_get_length,
 };
+/**
+ * @brief Testfs's kfile operations for directory kfiles
+ */
 static kfile_ops_t testfs_dir_ops = {
     .open = testfs_open,
     .iterate_shared = testfs_iterate_shared,
 };
 
+/**
+ * @brief testfs's filesystem type
+ */
 static fs_type_t testfs_fs_type = {
     .ft_name = "testfs",
     .mount = testfs_mount
 };
 
+/**
+ * @brief testfs implementation of the kfile open operation
+ *
+ * @param inode the inode being opened
+ * @param file the file to be initialized
+ * @param flags additional options to the operation (unused)
+ * @return status_t the error status of the operation
+ */
 status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags)
 {
     (void) flags;
@@ -62,6 +98,18 @@ status_t testfs_open(inode_t *inode, kfile_t *file, uint32_t flags)
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the inode iterate_shared operation
+ *
+ * Gets the entries in a directory.
+ *
+ * @param file the directory file to get the children of
+ * @param buffer the buffer to store adinfs_dent_t's in
+ * @param buffer_count the size of buffer in adinfs_dent_t's
+ * @param num_written the number of dents written
+ * @param flags additional options to the operation
+ * @return status_t the error status of the operation
+ */
 status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t buffer_count, uint32_t *num_written, uint32_t flags)
 {
     bogus_node_t *node = FILE_TO_BOGUS_NODE(file);
@@ -82,6 +130,7 @@ status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t bu
 
     adinfs_dent_t *dest = buffer;
     if(!(flags & LIST_DIR_SUPPRESS_DOTS)) {
+        // Emit dot entries
         CLEAR_PTR(&(buffer[0]));
         CLEAR_PTR(&(buffer[1]));
 
@@ -94,6 +143,7 @@ status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t bu
         dest += 2;
     }
 
+    // Copy the result data to buffer
     for(uint32_t i = 0; i < total_entries; i++) {
         adinfs_dent_t *dent = dest + i;
         bogus_node_t *child = node->children[i];
@@ -107,6 +157,13 @@ status_t testfs_iterate_shared(kfile_t *file, adinfs_dent_t* buffer, uint32_t bu
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the directory inode lookup operation
+ *
+ * @param inode the inode to lookup names under
+ * @param dirent the dirent to store the result in
+ * @return status_t the error status of the operation
+ */
 status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
 {
     bogus_node_t *bogus_node = inode->i_priv;
@@ -131,6 +188,12 @@ status_t testfs_lookup(inode_t *inode, dirent_t *dirent)
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the kfile close operation
+ *
+ * @param file the file being closed
+ * @return status_t the error status of the operation
+ */
 status_t testfs_close_file(kfile_t *file)
 {
     __cio_printf("Closing testfs file (in driver) %s\n", ((bogus_node_t *)file->kf_priv)->name);
@@ -138,6 +201,14 @@ status_t testfs_close_file(kfile_t *file)
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the kfile ioctl operation
+ *
+ * @param file the file to operate on
+ * @param action the action to perform
+ * @param data optional input or output data
+ * @return status_t the error status of the operation
+ */
 status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data)
 {
     if(action != TESTFS_SAY_HI) {
@@ -156,6 +227,17 @@ status_t testfs_ioctl(kfile_t *file, uint32_t action, void *data)
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the kfile read operation
+ *
+ * @param file the file to read from
+ * @param buffer the buffer to read data into (must be <= num_to_read bytes long)
+ * @param num_to_read the number of bytes to read
+ * @param offset the offset into the file data to read from
+ * @param flags additional options to the operation (unused)
+ * @param num_read the number of bytes read from the file / written to buffer
+ * @return status_t the error status of the operation
+ */
 status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uint32_t offset, uint32_t flags, uint32_t *num_read)
 {
     if(!num_read) {
@@ -190,6 +272,17 @@ status_t testfs_file_read(kfile_t *file, void *buffer, uint32_t num_to_read, uin
     return result;
 }
 
+/**
+ * @brief testfs implementation of the kfiile write operation
+ *
+ * @param file the file to write to
+ * @param buffer the buffer containing the data to write (must be <= num_bytes long)
+ * @param num_bytes the number of bytes to write
+ * @param offset the offset into the file's data to write to
+ * @param flags additional options to the operation (unused)
+ * @param num_written the number of bytes written to the file / read from buffer
+ * @return status_t the error status of the operation
+ */
 status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint32_t offset, uint32_t flags, uint32_t *num_written)
 {
     if(!num_written) {
@@ -232,14 +325,29 @@ status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint
     return S_OK;
 }
 
+/**
+ * @brief testfs implementation of the kfile get_length operation
+ *
+ * @param file the file to get the length of
+ * @return uint32_t the length of the file
+ */
 uint32_t testfs_get_length(kfile_t *file)
 {
     // TODO(Adin): Adjust this for ram-backed, writable files
     return FILE_TO_BOGUS_NODE(file)->length;
 }
 
+/**
+ * @brief testfs's singleton superblock
+ */
 static super_block_t *testfs_super_block = NULL;
 
+/**
+ * @brief mount a testfs filesystem
+ *
+ * @param fs_type the fs_type to mount (will always be testfs)
+ * @return dirent_t* the root direntry of the new mount
+ */
 dirent_t *testfs_mount(fs_type_t *fs_type)
 {
     // There will only ever be one instance of this filesystem
@@ -287,9 +395,11 @@ dirent_t *testfs_mount(fs_type_t *fs_type)
     return testfs_root_dirent;
 }
 
-// -------------------------------------------------------
-// Create me
-
+/**
+ * @brief Initialize the filesystem driver
+ *
+ * @return status_t the error status of the operation
+ */
 status_t testfs_init(void)
 {
     __init_bogus_nodes();
@@ -298,6 +408,11 @@ status_t testfs_init(void)
     return E_SUCCESS;
 }
 
+/**
+ * @brief Deinitialize the filesystem driver and all associated resources
+ *
+ * @return status_t the error status of the operation
+ */
 status_t testfs_deinit(void)
 {
     __deinit_bogus_nodes();

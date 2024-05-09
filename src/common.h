@@ -164,8 +164,6 @@ enum prio_e {
 // Just VFS Things
 typedef uint32_t inum_t;
 
-#define VFS_NAME_MAX 255
-
 // TODO(Adin): Make this better
 typedef struct adinfs_dent
 {
@@ -175,18 +173,22 @@ typedef struct adinfs_dent
 
 typedef int fd_t;
 
+// File open modes
 #define O_READ  (0x01U)
 #define O_WRITE (0x02U)
 #define O_RDWR  (O_READ | O_WRITE)
 
+// Inode (file) types
 #define S_TYPE_DIR  (1U)
 #define S_TYPE_FILE (2U)
 #define S_TYPE_DEV  (3U)
 
+// Seek whences (seek fseek)
 #define SEEK_CURR (0U)
 #define SEEK_SET  (1U)
 #define SEEK_END  (2U)
 
+// Flag to pass to flistdir to suppress returning of dot entries
 #define LIST_DIR_SUPPRESS_DOTS (0x01U)
 
 /*
