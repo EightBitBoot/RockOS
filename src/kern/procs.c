@@ -453,7 +453,6 @@ void _pcb_zombify( pcb_t *victim )
  */
 fd_t _pcb_get_next_fd(pcb_t *pcb)
 {
-	// TODO(Adin): Check for pcb == NULL and pcb->open_files == NULL;
 	for(int i = 0; i < VFS_MAX_OPEN_FILES; i++) {
 		if(pcb->open_files[i] == NULL) {
 			return i;

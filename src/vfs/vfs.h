@@ -46,9 +46,6 @@ struct dirent
     queue_t children;                  // The children in the vfs hirearchy
 };
 
-// TODO(Adin): Make this dynamic (eg. accessed via a function call) when the
-//             dirent cache system is made
-
 /**
  * @brief The dirent corresponding to the root of the vfs ("/")
  */
@@ -74,9 +71,6 @@ struct mount
 //             be assumed to be the first mount created (mount #0)
 
 // ----------------------------------------------------------------------------
-
-// TODO(Adin): Remove / expand me?
-#define FS_TYPE_NAME_MAX 50
 
 /**
  * @brief A type of filesystem (registerd by drivers)

@@ -61,7 +61,6 @@ int kstr_strcmp(kstr_t *left, kstr_t *right);
 typedef struct kstr_strtok_context
 {
     char *last_end;
-    // TODO(Adin): Finish me
 } kstr_strtok_context_t;
 
 /**

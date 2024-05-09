@@ -48,8 +48,6 @@ status_t resolve_path(char *path, dirent_t **result)
             return S_NOT_A_DIR;
         }
 
-        // TODO(Adin): Check for path component > VFS_NAME_MAX
-
         // Handle relative path components
         if(KSTR_IS_EQUAL(&curr_component, &dot_str)) {
             continue;
@@ -83,8 +81,6 @@ status_t resolve_path(char *path, dirent_t **result)
             *result = NULL;
             return S_NOTFOUND;
         }
-
-        // TODO(Adin): Cross fs boundaries (mount points) here
 
         // --- Name not in the direntry cache: put it there ---
 

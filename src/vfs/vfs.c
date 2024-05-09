@@ -11,8 +11,6 @@
 #include "util/slab_cache.h"
 #include "mem/kmem.h"
 
-// TODO(Adin): Temp for testing, realistically the initialization
-//             should probably be done somewhere else
 #include "testfs/testfs.h"
 
 dirent_t *g_root_dirent;
@@ -66,7 +64,6 @@ void _vfs_init(void)
     __next_mount = 0;
 
     // Initialize caches used
-    // TODO(Adin): Check return statuses of cache initializations
     slab_init(&__kfile_cache, sizeof(kfile_t), SC_INIT_LARGE_SLABS);
     // Use small slabs here because there likely won't be too many in the system
     slab_init(&__superblock_cache, sizeof(super_block_t), 0);
@@ -74,7 +71,6 @@ void _vfs_init(void)
     slab_init(&__mount_cache, sizeof(mount_t), SC_INIT_LARGE_SLABS);
 
     // Initialize and mount the test filesystem
-    // TODO(Adin): change this to the real root fs type
     testfs_init();
     _vfs_mount_fs("/", 0);
     g_root_dirent = __mounts[0]->mnt_root;
@@ -142,8 +138,6 @@ dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num)
     __mounts[__next_mount] = new_mount;
     __next_mount++;
 
-    // TODO(Adin): Assign root_dirent's parent
-
     return root_dirent;
 }
 
@@ -154,7 +148,6 @@ dirent_t *_vfs_mount_fs(char *mountpoint, uint16_t fs_type_num)
  */
 kfile_t *_vfs_allocate_file(void)
 {
-    // TODO(Adin): Reference counting
     return slab_alloc(&__kfile_cache, SC_ALLOC_ZERO_MEM);
 }
 
@@ -165,7 +158,6 @@ kfile_t *_vfs_allocate_file(void)
  */
 super_block_t *_vfs_allocate_superblock(void)
 {
-    // TODO(Adin): Reference counting
     return slab_alloc(&__superblock_cache, SC_ALLOC_ZERO_MEM);
 }
 
@@ -248,6 +240,5 @@ void _vfs_dirent_to_pathname(dirent_t *dirent, char *buffer)
  */
 static mount_t *__vfs_allocate_mount(void)
 {
-    // TODO(Adin): Reference counting
     return slab_alloc(&__mount_cache, SC_ALLOC_ZERO_MEM);
 }

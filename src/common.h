@@ -164,7 +164,6 @@ enum prio_e {
 // Just VFS Things
 typedef uint32_t inum_t;
 
-// TODO(Adin): Make this better
 typedef struct adinfs_dent
 {
 	char name[VFS_NAME_MAX];

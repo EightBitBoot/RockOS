@@ -302,12 +302,10 @@ status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint
 
     uint32_t file_len_before = testfs_get_length(file);
 
-    // TODO(Adin): Un-hardcode 4096
     if(file_len_before == 4096) {
         return S_NOMEM;
     }
 
-    // TODO(Adin): Un-hardcode this
     // 4096 byte page backings for files
     // (4096 - offset) will never underflow. 2 cases:
     //     a) offset is < 4096
@@ -333,7 +331,6 @@ status_t testfs_file_write(kfile_t *file, void *buffer, uint32_t num_bytes, uint
  */
 uint32_t testfs_get_length(kfile_t *file)
 {
-    // TODO(Adin): Adjust this for ram-backed, writable files
     return FILE_TO_BOGUS_NODE(file)->length;
 }
 
@@ -417,6 +414,5 @@ status_t testfs_deinit(void)
 {
     __deinit_bogus_nodes();
 
-    // TODO(Adin): Unregister fs type here
     return E_SUCCESS;
 }

@@ -610,8 +610,7 @@ SYSIMPL(fork)
 	// replicate things inherited from the parent
 	pcb->priority = _current->priority;
 
-	pcb->cwd = _current->cwd; // TODO(Adin): Reference count the dir entry
-	// TODO(Adin): Initialize stdin and out from parent here (open new files)
+	pcb->cwd = _current->cwd;
 
 	/*
 	** Next, we need to update the ESP and EBP values in the child's
@@ -962,8 +961,6 @@ SYSIMPL(fopen)
 		return;
 	}
 
-	// TODO(Adin): Should this be a reason to fail or should open be an extra
-	//			   hook the fs driver can _optionally_ implement?
 	if(!target->i_file_ops || !target->i_file_ops->open){
 		RET(_current) = E_NOT_SUPPORTED;
 		return;

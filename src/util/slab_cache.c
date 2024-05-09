@@ -92,9 +92,6 @@ static inline void *__get_slab(slab_cache_t *cache)
     return new_slab;
 }
 
-// TODO(Adin): Should the _km_{page|slice}_free functions return errors
-//             and if so, should the be passed up the stack here?
-
 /**
  * @brief Free a cache's slab
  *
@@ -180,7 +177,6 @@ void *slab_alloc(slab_cache_t *cache, uint32_t flags)
         // and initialize a new slab
 
         void *new_slab = __get_slab(cache);
-        // TODO(Adin): Check that new_slab != NULL
 
         // Add the slab to the list of all slabs
         ((slab_header_t *) new_slab)->next_slab = cache->all_slabs;
@@ -190,8 +186,6 @@ void *slab_alloc(slab_cache_t *cache, uint32_t flags)
             slab_free(cache, curr);
         }
     }
-
-    // TODO(Adin): Error checking for above memory allocation / error checking in general
 
     void *new_element = cache->free_elements;
     cache->free_elements = *VOID_PTR_TO_LIST_ITEM(new_element);
