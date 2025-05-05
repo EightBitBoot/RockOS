@@ -1,3 +1,11 @@
+/**
+** @file	test_vfs.c
+**
+** @author	Adin Wistreich-Tannenbaum
+**
+** @brief	Testing routines for the userspace interface to the vfs
+*/
+
 #include "common.h"
 #include "usr/users.h"
 #include "usr/ulib.h"
