@@ -25,6 +25,8 @@
 #include "cio.h"
 #include "common.h"
 
+unsigned int active_color;
+
 unsigned int vga_text_fg (unsigned int c) {
     return (c & 0x0F) << 8; //Ensure color is free of extra bits, bitshift to foreground
 }

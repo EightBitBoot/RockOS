@@ -29,9 +29,6 @@
 # QEMU binary location varies between systems
 #
 
-DSL=/usr/local/dcs/bin/qemu-system-i386
-MAIN=/home/course/csci352/bin/qemu-system-i386
-
 read -d '' -r USAGE_MSG << E_USG_MSG
 Usage: $0 [options]
     All flags are mutually exclusive except -h
@@ -77,8 +74,7 @@ while getopts 'csghd' opt; do
 done
 
 if ! (( $CONSOLE | $SERIAL | $GRAPHICAL )); then
-    echo None
-    CONSOLE=1
+    GRAPHICAL=1
 fi
 
 if ! (( $CONSOLE ^ $SERIAL ^ $GRAPHICAL )) || (( $CONSOLE & $SERIAL & $GRAPHICAL )); then
@@ -90,10 +86,10 @@ if ! (( $CONSOLE ^ $SERIAL ^ $GRAPHICAL )) || (( $CONSOLE & $SERIAL & $GRAPHICAL
     display_help
 fi
 
-[[ $CONSOLE = 1 ]] && DISPLAY_CMD="-nographic -curses"
+[[ $CONSOLE = 1 ]] && DISPLAY_CMD="-nographic -display curses"
 [[ $SERIAL = 1 ]]  && DISPLAY_CMD="-nographic -vnc :0 -serial mon:stdio"
 [[ $GRAPHICAL = 1 ]] && DISPLAY_CMD="-serial mon:stdio"
 
 [[ $DEBUG = 1 ]] && DEBUG_CMD="-s -S"
 
-exec $MAIN $DEBUG_CMD $DISPLAY_CMD -drive file=build/disk.img,index=0,media=disk,format=raw
+qemu-system-i386 $DEBUG_CMD $DISPLAY_CMD -drive file=build/disk.img,index=0,media=disk,format=raw

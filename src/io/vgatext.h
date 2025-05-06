@@ -63,7 +63,7 @@
 // Default Color
 #define VGA_TEXT_DEFAULT_COLOR_BYTE 0x700
 // Active Color
-unsigned int    active_color; // The color to be masked onto the character - as such, the lower 8 bits should be 0 and the upper 8 should store the VGA color data
+extern unsigned int    active_color; // The color to be masked onto the character - as such, the lower 8 bits should be 0 and the upper 8 should store the VGA color data
 // Logo Blob
 extern char logo[432];
 
